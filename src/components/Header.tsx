@@ -1,13 +1,16 @@
 
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ConnectButton from "./ConnectButton";
+import { Toggle } from "@/components/ui/toggle";
+import { useTheme } from "@/hooks/use-theme";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { theme, setTheme } = useTheme();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -18,14 +21,14 @@ const Header = () => {
       <div className="glass-panel mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
         <div className="flex items-center">
           <span className="text-xl font-bold bg-gradient-to-r from-doc-deep-blue to-blue-500 bg-clip-text text-transparent">
-            DocuExchange
+            TUMA
           </span>
         </div>
 
         {isMobile ? (
           <button 
             onClick={toggleMenu} 
-            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -76,6 +79,14 @@ const Header = () => {
             <div className="ml-6 z-50">
               <ConnectButton />
             </div>
+            <Toggle 
+              aria-label="Toggle dark mode"
+              className="ml-2 p-2 rounded-full"
+              pressed={theme === "dark"}
+              onPressedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+            </Toggle>
           </nav>
         )}
       </div>
@@ -130,8 +141,16 @@ const Header = () => {
             >
               About
             </NavLink>
-            <div className="pt-2">
+            <div className="pt-2 flex items-center justify-between">
               <ConnectButton />
+              <Toggle 
+                aria-label="Toggle dark mode"
+                className="p-2 rounded-full"
+                pressed={theme === "dark"}
+                onPressedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
+              >
+                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              </Toggle>
             </div>
           </nav>
         </div>

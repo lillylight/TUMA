@@ -97,15 +97,15 @@
 
 @layer components {
   .glass-panel {
-    @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white border-opacity-20 rounded-xl shadow-glass;
+    @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white border-opacity-20 rounded-xl shadow-glass dark:bg-gray-900 dark:bg-opacity-60 dark:border-gray-800 dark:border-opacity-30;
   }
   
   .nav-link {
-    @apply relative px-3 py-2 text-doc-medium-gray hover:text-doc-deep-blue transition-colors duration-200 font-medium;
+    @apply relative px-3 py-2 text-doc-medium-gray hover:text-doc-deep-blue transition-colors duration-200 font-medium dark:text-gray-400 dark:hover:text-white;
   }
   
   .nav-link::after {
-    @apply content-[''] absolute bottom-0 left-0 w-0 h-0.5 bg-doc-deep-blue transition-all duration-300 ease-in-out;
+    @apply content-[''] absolute bottom-0 left-0 w-0 h-0.5 bg-doc-deep-blue dark:bg-blue-500 transition-all duration-300 ease-in-out;
   }
   
   .nav-link:hover::after {
@@ -113,7 +113,7 @@
   }
   
   .nav-link.active {
-    @apply text-doc-deep-blue;
+    @apply text-doc-deep-blue dark:text-white;
   }
   
   .nav-link.active::after {
