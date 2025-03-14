@@ -1,0 +1,143 @@
+
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import ConnectButton from "./ConnectButton";
+
+const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  return (
+    <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+      <div className="glass-panel mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+        <div className="flex items-center">
+          <span className="text-xl font-bold bg-gradient-to-r from-doc-deep-blue to-blue-500 bg-clip-text text-transparent">
+            DocuExchange
+          </span>
+        </div>
+
+        {isMobile ? (
+          <button 
+            onClick={toggleMenu} 
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        ) : (
+          <nav className="hidden md:flex items-center space-x-1">
+            <NavLink 
+              to="/" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              } 
+              end
+            >
+              Dashboard
+            </NavLink>
+            <NavLink 
+              to="/documents" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
+              Documents
+            </NavLink>
+            <NavLink 
+              to="/send" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
+              Send
+            </NavLink>
+            <NavLink 
+              to="/profile" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
+              Profile
+            </NavLink>
+            <NavLink 
+              to="/about" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+            >
+              About
+            </NavLink>
+            <div className="ml-6">
+              <ConnectButton />
+            </div>
+          </nav>
+        )}
+      </div>
+
+      {/* Mobile menu, show/hide based on menu state */}
+      {isMobile && isMenuOpen && (
+        <div className="glass-panel md:hidden mt-2 py-4 px-2 rounded-xl animate-scale-in">
+          <nav className="flex flex-col space-y-3">
+            <NavLink 
+              to="/" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              } 
+              onClick={() => setIsMenuOpen(false)}
+              end
+            >
+              Dashboard
+            </NavLink>
+            <NavLink 
+              to="/documents" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Documents
+            </NavLink>
+            <NavLink 
+              to="/send" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Send
+            </NavLink>
+            <NavLink 
+              to="/profile" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Profile
+            </NavLink>
+            <NavLink 
+              to="/about" 
+              className={({ isActive }) => 
+                isActive ? "nav-link active" : "nav-link"
+              }
+              onClick={() => setIsMenuOpen(false)}
+            >
+              About
+            </NavLink>
+            <div className="pt-2">
+              <ConnectButton />
+            </div>
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;
