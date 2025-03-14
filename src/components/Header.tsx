@@ -73,7 +73,7 @@ const Header = () => {
             >
               About
             </NavLink>
-            <div className="ml-6">
+            <div className="ml-6 z-50">
               <ConnectButton />
             </div>
           </nav>
