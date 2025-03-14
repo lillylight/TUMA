@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { Check, ChevronDown, Edit2, Gem, LogOut, Settings, Shield, User as UserIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -16,7 +15,6 @@ const Profile = () => {
     toast.success("Profile updated successfully");
   };
   
-  // Simulate loading user activity
   const [activityLoading, setActivityLoading] = useState(true);
   
   useEffect(() => {
@@ -34,7 +32,6 @@ const Profile = () => {
     { id: 4, action: "Connected app", target: "", date: "Oct 12, 2023, 9:15 AM" },
   ];
   
-  // Connected apps (simulated)
   const connectedApps = [
     { id: 1, name: "Google Drive", connected: true, date: "Oct 10, 2023" },
     { id: 2, name: "Dropbox", connected: true, date: "Oct 8, 2023" },
@@ -264,7 +261,6 @@ const ActivityIcon = ({ action }: { action: string }) => {
 };
 
 const AppIcon = ({ name }: { name: string }) => {
-  // Simple representation of app icons
   if (name.includes("Google")) {
     return <div className="text-xl text-blue-600">G</div>;
   } else if (name.includes("Dropbox")) {

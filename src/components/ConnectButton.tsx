@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Link } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 const ConnectButton = () => {
   const [connected, setConnected] = useState(false);

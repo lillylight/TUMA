@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { FileUp, Send as SendIcon, User, Users, X } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import Header from "@/components/Header";
 
 const Send = () => {
