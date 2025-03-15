@@ -34,10 +34,9 @@ const Landing = () => {
   ];
 
   const pricingTiers = [
-    { size: "Below 10MB", price: "$1.00" },
-    { size: "11MB to 30MB", price: "$1.50" },
-    { size: "30MB to 60MB", price: "$2.00" },
-    { size: "61MB to 100MB", price: "$2.50" }
+    { size: "Up to 20MB", price: "$1.00" },
+    { size: "21MB to 50MB", price: "$2.00" },
+    { size: "51MB to 100MB", price: "$3.00" }
   ];
 
   return (
