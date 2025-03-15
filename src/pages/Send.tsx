@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { FileUp, Send as SendIcon, User, Users, X, AlertCircle, Coins } from "lucide-react";
+import { FileUp, Send as SendIcon, User, Users, X, AlertCircle, Coins, Clock } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { useWallet } from "@/hooks/use-wallet";
-import { arweaveService, DocumentMetadata } from "@/lib/arweave-service";
-import { contractService, PaymentCurrency } from "@/lib/contract-service";
+import { arweaveService, FileMetadata } from "@/lib/arweave-service";
+import { contractService, PaymentCurrency, RecipientInfo } from "@/lib/contract-service";
 import { ethers } from "ethers";
 
 const Send = () => {
@@ -54,8 +54,8 @@ const Send = () => {
       // Start sending process
       setSending(true);
       
-      // 1. Upload document to Arweave
-      const metadata: DocumentMetadata = {
+      // 1. Upload file to Arweave
+      const metadata: FileMetadata = {
         name: file.name,
         type: file.type,
         size: file.size,
@@ -180,7 +180,7 @@ const Send = () => {
       }
       
       // Upload to Arweave after payment is confirmed
-      const metadata: DocumentMetadata = {
+      const metadata: FileMetadata = {
         name: file.name,
         type: file.type,
         size: file.size,
@@ -191,7 +191,7 @@ const Send = () => {
       };
       
       // Upload to Arweave with automatic wallet generation
-      const arweaveId = await arweaveService.uploadDocument(file, metadata, address);
+      const arweaveId = await arweaveService.uploadFile(file, metadata, address);
       
       toast.success("Document sent successfully!");
       
@@ -220,11 +220,48 @@ const Send = () => {
     setDocumentId("");
   };
 
-  const recentRecipients = [
-    { id: 1, name: "Alice Chen", email: "alice@example.com" },
-    { id: 2, name: "John Smith", email: "john@example.com" },
-    { id: 3, name: "Finance Team", email: "finance@example.com" },
-  ];
+  // State for recent recipients
+  const [recentRecipients, setRecentRecipients] = useState<RecipientInfo[]>([]);
+  const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
+
+  // Load recent recipients when component mounts or address changes
+  useEffect(() => {
+    const loadRecentRecipients = async () => {
+      if (isConnected && address && contractService.isInitialized()) {
+        setIsLoadingRecipients(true);
+        try {
+          const recipients = await contractService.getRecentRecipients(address);
+          setRecentRecipients(recipients);
+        } catch (error) {
+          console.error('Error loading recent recipients:', error);
+        } finally {
+          setIsLoadingRecipients(false);
+        }
+      }
+    };
+
+    loadRecentRecipients();
+  }, [isConnected, address]);
+
+  // Format relative time (e.g., "2 days ago")
+  const formatRelativeTime = (date: Date): string => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 30) return `${diffInDays}d ago`;
+    
+    const diffInMonths = Math.floor(diffInDays / 30);
+    return `${diffInMonths}mo ago`;
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 page-transition">
@@ -520,21 +557,40 @@ const Send = () => {
                 <h3 className="font-medium">Recent Recipients</h3>
               </div>
               <div className="space-y-3">
-                {recentRecipients.map((recipient) => (
-                  <button
-                    key={recipient.id}
-                    onClick={() => setRecipient(recipient.email)}
-                    className="flex items-center w-full p-3 rounded-lg hover:bg-doc-soft-blue dark:hover:bg-blue-900/30 transition-colors text-left"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-doc-deep-blue text-white flex items-center justify-center mr-3">
-                      {recipient.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium">{recipient.name}</p>
-                      <p className="text-xs text-doc-medium-gray">{recipient.email}</p>
-                    </div>
-                  </button>
-                ))}
+                {isLoadingRecipients ? (
+                  <div className="py-6 text-center">
+                    <div className="animate-spin mx-auto h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+                    <p className="text-doc-medium-gray">Loading recent recipients...</p>
+                  </div>
+                ) : recentRecipients.length > 0 ? (
+                  recentRecipients.map((recipient) => (
+                    <button
+                      key={recipient.address}
+                      onClick={() => {
+                        setRecipient(recipient.name);
+                        setRecipientAddress(recipient.address);
+                      }}
+                      className="flex items-center w-full p-3 rounded-lg hover:bg-doc-soft-blue dark:hover:bg-blue-900/30 transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-doc-deep-blue text-white flex items-center justify-center mr-3">
+                        {recipient.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{recipient.name}</p>
+                        <p className="text-xs text-doc-medium-gray truncate">{recipient.address}</p>
+                      </div>
+                      <div className="text-xs text-doc-medium-gray flex items-center">
+                        <Clock size={12} className="mr-1" />
+                        {formatRelativeTime(recipient.lastSent)}
+                      </div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="py-6 text-center text-doc-medium-gray">
+                    <p>No recent recipients found</p>
+                    <p className="text-xs mt-1">Recipients will appear here after you send documents</p>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -547,7 +603,7 @@ const Send = () => {
                 </li>
                 <li className="flex">
                   <span className="text-doc-deep-blue mr-2">•</span>
-                  Maximum file size is 100MB
+                  Maximum file size is 200MB
                 </li>
                 <li className="flex">
                   <span className="text-doc-deep-blue mr-2">•</span>
@@ -568,12 +624,16 @@ const Send = () => {
                   <span className="font-medium">$1.00</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">21MB to 50MB:</span>
+                  <span className="text-doc-medium-gray">20MB to 50MB:</span>
                   <span className="font-medium">$2.00</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">51MB to 100MB:</span>
+                  <span className="text-doc-medium-gray">50MB to 100MB:</span>
                   <span className="font-medium">$3.00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">100MB to 200MB:</span>
+                  <span className="font-medium">$5.00</span>
                 </li>
               </ul>
             </div>

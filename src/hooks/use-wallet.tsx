@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import { createConfig, http, WagmiProvider } from 'wagmi';
 import { base, mainnet } from 'viem/chains';
-import { injected, metaMask, coinbaseWallet, walletConnect } from 'wagmi/connectors';
+import { injected, metaMask, walletConnect, coinbaseWallet } from 'wagmi/connectors';
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
 import { toast } from 'sonner';
 
@@ -29,7 +29,7 @@ interface WalletContextType {
   address: string | undefined;
   isConnected: boolean;
   isConnecting: boolean;
-  connect: () => void;
+  connect: (connectorId?: string) => void;
   disconnect: () => void;
   error: Error | null;
 }
@@ -57,11 +57,16 @@ const WalletProvider = ({ children }: WalletProviderProps) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const connect = async () => {
+  const connect = async (connectorId?: string) => {
     try {
       setIsConnecting(true);
       setError(null);
-      const connector = connectors.find(c => c.id === 'metaMask') || connectors[0];
+      
+      // Find the requested connector or default to MetaMask
+      const connector = connectorId 
+        ? connectors.find(c => c.id === connectorId) 
+        : connectors.find(c => c.id === 'metaMask') || connectors[0];
+      
       if (connector) {
         await wagmiConnect({ connector });
         toast.success('Wallet connected successfully');

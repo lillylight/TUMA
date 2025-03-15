@@ -5,11 +5,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import Header from "@/components/Header";
 import { useWallet } from "@/hooks/use-wallet";
-import { arweaveService, StoredDocument } from "@/lib/arweave-service";
+import { arweaveService, StoredFile } from "@/lib/arweave-service";
 import { contractService } from "@/lib/contract-service";
 import { format } from "date-fns";
 
-interface DocumentWithPayment extends StoredDocument {
+interface FileWithPayment extends StoredFile {
   isPaid?: boolean;
 }
 
@@ -17,8 +17,8 @@ const Documents = () => {
   const { address, isConnected } = useWallet();
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
-  const [receivedDocs, setReceivedDocs] = useState<DocumentWithPayment[]>([]);
-  const [sentDocs, setSentDocs] = useState<DocumentWithPayment[]>([]);
+  const [receivedDocs, setReceivedDocs] = useState<FileWithPayment[]>([]);
+  const [sentDocs, setSentDocs] = useState<FileWithPayment[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   // Fetch documents from Arweave
@@ -34,10 +34,10 @@ const Documents = () => {
         setError(null);
         
         // Fetch received documents
-        const received = await arweaveService.getReceivedDocuments(address);
+        const received = await arweaveService.getReceivedFiles(address);
         
         // Fetch sent documents
-        const sent = await arweaveService.getSentDocuments(address);
+        const sent = await arweaveService.getSentFiles(address);
         
         // Check payment status for each document
         const receivedWithPayment = await Promise.all(
@@ -119,10 +119,10 @@ const Documents = () => {
     doc.metadata.recipient.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  // Download document
-  const downloadDocument = async (docId: string, fileName: string) => {
+  // Download file
+  const downloadFile = async (docId: string, fileName: string) => {
     try {
-      const { data, metadata } = await arweaveService.getDocument(docId);
+      const { data, metadata } = await arweaveService.getFile(docId);
       
       // Create blob from data
       const blob = new Blob([data], { type: metadata.type || 'application/octet-stream' });
@@ -261,14 +261,14 @@ const Documents = () => {
                               <button 
                                 className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-doc-deep-blue"
                                 title="View document"
-                                onClick={() => downloadDocument(doc.id, doc.metadata.name)}
+                                onClick={() => downloadFile(doc.id, doc.metadata.name)}
                               >
                                 <FileSearch size={16} />
                               </button>
                               <button 
                                 className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-doc-deep-blue"
                                 title="Download"
-                                onClick={() => downloadDocument(doc.id, doc.metadata.name)}
+                                onClick={() => downloadFile(doc.id, doc.metadata.name)}
                               >
                                 <ArrowDownToLine size={16} />
                               </button>
@@ -350,7 +350,7 @@ const Documents = () => {
                               <button 
                                 className="p-1.5 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors text-doc-deep-blue"
                                 title="View document"
-                                onClick={() => downloadDocument(doc.id, doc.metadata.name)}
+                                onClick={() => downloadFile(doc.id, doc.metadata.name)}
                               >
                                 <FileSearch size={16} />
                               </button>

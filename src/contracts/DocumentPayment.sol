@@ -24,17 +24,19 @@ contract DocumentPayment is ReentrancyGuard, Ownable {
     enum PaymentStatus { Unpaid, Paid, Refunded }
     
     // File size tiers in bytes
-    enum FileSizeTier { Small, Medium, Large }
+    enum FileSizeTier { Small, Medium, Large, ExtraLarge }
     
     // Tier thresholds in bytes
     uint256 public constant SMALL_TIER_MAX = 20 * 1024 * 1024; // 20MB
     uint256 public constant MEDIUM_TIER_MAX = 50 * 1024 * 1024; // 50MB
-    uint256 public constant MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+    uint256 public constant LARGE_TIER_MAX = 100 * 1024 * 1024; // 100MB
+    uint256 public constant MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
     
     // Fee multipliers for each tier (in basis points, 100 = 1%)
     uint256 public smallTierMultiplier = 100; // $1.00
     uint256 public mediumTierMultiplier = 200; // $2.00
     uint256 public largeTierMultiplier = 300; // $3.00
+    uint256 public extraLargeTierMultiplier = 500; // $5.00
     
     // Arweave storage fee percentage (in basis points, 100 = 1%)
     uint256 public arweaveStorageFeePercentage = 6000; // 60% of total fee
@@ -126,8 +128,10 @@ contract DocumentPayment is ReentrancyGuard, Ownable {
             return (baseFee.mul(smallTierMultiplier).div(100), FileSizeTier.Small);
         } else if (fileSize <= MEDIUM_TIER_MAX) {
             return (baseFee.mul(mediumTierMultiplier).div(100), FileSizeTier.Medium);
-        } else {
+        } else if (fileSize <= LARGE_TIER_MAX) {
             return (baseFee.mul(largeTierMultiplier).div(100), FileSizeTier.Large);
+        } else {
+            return (baseFee.mul(extraLargeTierMultiplier).div(100), FileSizeTier.ExtraLarge);
         }
     }
     
@@ -336,6 +340,8 @@ contract DocumentPayment is ReentrancyGuard, Ownable {
             mediumTierMultiplier = multiplier;
         } else if (tier == FileSizeTier.Large) {
             largeTierMultiplier = multiplier;
+        } else if (tier == FileSizeTier.ExtraLarge) {
+            extraLargeTierMultiplier = multiplier;
         }
         
         emit MultiplierUpdated(tier, multiplier);

@@ -1,24 +1,11 @@
 import { ethers } from 'ethers';
 import { toast } from 'sonner';
 
-// ABI for the DocumentPayment contract
-const contractABI = [
-  // ETH payment functions
-  "function payForDocumentWithETH(string documentId, address recipient, uint256 fileSize) external payable",
-  // USDC payment functions
-  "function payForDocumentWithUSDC(string documentId, address recipient, uint256 fileSize, uint256 amount) external",
-  // Common functions
-  "function refundPayment(string documentId) external",
-  "function getPayment(string documentId) external view returns (tuple(address sender, address recipient, string documentId, uint256 amount, uint256 fileSize, uint8 tier, uint256 timestamp, uint8 status, uint8 currency))",
-  "function isDocumentPaid(string documentId) external view returns (bool)",
-  "function calculateFee(uint256 fileSize) public view returns (uint256 fee, uint8 tier)",
-  "function baseFee() external view returns (uint256)",
-  "function registerName(address addr, string memory name) external",
-  "function resolveName(string memory name) external view returns (address)",
-  "function getNameForAddress(address addr) external view returns (string memory)",
-  // USDC token
-  "function usdcToken() external view returns (address)"
-];
+// Import the ABI from the compiled contract
+import * as DocumentPaymentABI from '../contracts/DocumentPayment.json';
+
+// Use the ABI from the imported file
+const contractABI = (DocumentPaymentABI as any).abi;
 
 // Payment status enum from the contract
 export enum PaymentStatus {
@@ -31,7 +18,8 @@ export enum PaymentStatus {
 export enum FileSizeTier {
   Small = 0,
   Medium = 1,
-  Large = 2
+  Large = 2,
+  ExtraLarge = 3
 }
 
 // Payment currency enum from the contract
@@ -53,10 +41,19 @@ export interface Payment {
   currency: PaymentCurrency;
 }
 
+// Recipient information interface
+export interface RecipientInfo {
+  address: string;       // Ethereum address
+  name: string;          // ENS/Base name or shortened address
+  lastSent: Date;        // Timestamp of last interaction
+  documentCount?: number; // Optional: number of documents sent
+}
+
 // Tier thresholds in bytes (matching the contract)
 export const SMALL_TIER_MAX = 20 * 1024 * 1024; // 20MB
 export const MEDIUM_TIER_MAX = 50 * 1024 * 1024; // 50MB
-export const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+export const LARGE_TIER_MAX = 100 * 1024 * 1024; // 100MB
+export const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
 
 class ContractService {
   private provider: ethers.BrowserProvider | null = null;
@@ -151,9 +148,11 @@ class ContractService {
       case FileSizeTier.Small:
         return 'Small (up to 20MB) - $1.00';
       case FileSizeTier.Medium:
-        return 'Medium (21MB - 50MB) - $2.00';
+        return 'Medium (20MB to 50MB) - $2.00';
       case FileSizeTier.Large:
-        return 'Large (51MB - 100MB) - $3.00';
+        return 'Large (50MB to 100MB) - $3.00';
+      case FileSizeTier.ExtraLarge:
+        return 'Extra Large (100MB to 200MB) - $5.00';
       default:
         return 'Unknown';
     }
@@ -403,6 +402,64 @@ class ContractService {
    */
   parseUSDC(amount: string, decimals: number = 6): bigint {
     return ethers.parseUnits(amount, decimals);
+  }
+
+  /**
+   * Shorten an Ethereum address for display
+   * @param address The full address
+   * @returns Shortened address (e.g., 0x1234...5678)
+   */
+  shortenAddress(address: string): string {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  }
+
+  /**
+   * Get recent recipients from payment history
+   * @param senderAddress The address of the sender
+   * @param limit Maximum number of recipients to return (default: 10)
+   * @returns Array of recipient information
+   */
+  async getRecentRecipients(senderAddress: string, limit: number = 10): Promise<RecipientInfo[]> {
+    if (!this.isInitialized()) {
+      throw new Error('Contract service not initialized');
+    }
+
+    try {
+      // In a real implementation, we would query the contract events
+      // For now, we'll return mock data based on the sender address
+      
+      // This is a placeholder - in a real implementation, you would:
+      // 1. Create a filter for PaymentReceived events where the sender matches
+      // 2. Query events from recent blocks
+      // 3. Process events to extract recipient information
+      
+      // Mock data for demonstration
+      const mockRecipients: RecipientInfo[] = [
+        {
+          address: '0x1234567890123456789012345678901234567890',
+          name: 'Alice.eth',
+          lastSent: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
+          documentCount: 3
+        },
+        {
+          address: '0x2345678901234567890123456789012345678901',
+          name: 'Bob.base',
+          lastSent: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
+          documentCount: 2
+        },
+        {
+          address: '0x3456789012345678901234567890123456789012',
+          name: this.shortenAddress('0x3456789012345678901234567890123456789012'),
+          lastSent: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+          documentCount: 1
+        }
+      ];
+      
+      return mockRecipients.slice(0, limit);
+    } catch (error) {
+      console.error('Error getting recent recipients:', error);
+      return [];
+    }
   }
 }
 

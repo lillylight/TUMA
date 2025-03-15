@@ -13,7 +13,7 @@ const arweave = Arweave.init({
 // Local storage key for Arweave wallet
 const ARWEAVE_WALLET_KEY = 'tuma-arweave-wallet';
 
-export interface DocumentMetadata {
+export interface FileMetadata {
   name: string;
   type: string;
   size: number;
@@ -23,9 +23,9 @@ export interface DocumentMetadata {
   description?: string;
 }
 
-export interface StoredDocument {
+export interface StoredFile {
   id: string;
-  metadata: DocumentMetadata;
+  metadata: FileMetadata;
 }
 
 class ArweaveService {
@@ -128,13 +128,13 @@ class ArweaveService {
   }
 
   /**
-   * Upload a document to Arweave
+   * Upload a file to Arweave
    * @param file The file to upload
-   * @param metadata Document metadata
+   * @param metadata File metadata
    * @param ethAddress Optional Ethereum address to derive the wallet from
    * @returns The transaction ID
    */
-  async uploadDocument(file: File, metadata: DocumentMetadata, ethAddress?: string): Promise<string> {
+  async uploadFile(file: File, metadata: FileMetadata, ethAddress?: string): Promise<string> {
     // Ensure wallet is available
     await this.ensureWallet(ethAddress);
 
@@ -179,11 +179,11 @@ class ArweaveService {
   }
 
   /**
-   * Get a document from Arweave
+   * Get a file from Arweave
    * @param id The transaction ID
-   * @returns The document data and metadata
+   * @returns The file data and metadata
    */
-  async getDocument(id: string): Promise<{ data: Uint8Array; metadata: DocumentMetadata }> {
+  async getFile(id: string): Promise<{ data: Uint8Array; metadata: FileMetadata }> {
     try {
       // Get transaction data
       const data = await arweave.transactions.getData(id, { decode: true }) as Uint8Array;
@@ -192,7 +192,7 @@ class ArweaveService {
       const tags = await this.getTransactionTags(id);
       
       // Extract metadata from tags
-      const metadata: DocumentMetadata = {
+      const metadata: FileMetadata = {
         name: tags['Document-Name'] || 'Unknown',
         type: tags['Document-Type'] || 'Unknown',
         size: parseInt(tags['Document-Size'] || '0'),
@@ -231,11 +231,11 @@ class ArweaveService {
   }
 
   /**
-   * Get documents sent by a specific address
+   * Get files sent by a specific address
    * @param address The sender's address
-   * @returns Array of document IDs and metadata
+   * @returns Array of file IDs and metadata
    */
-  async getSentDocuments(address: string): Promise<StoredDocument[]> {
+  async getSentFiles(address: string): Promise<StoredFile[]> {
     try {
       const query = `{
         transactions(
@@ -272,11 +272,11 @@ class ArweaveService {
   }
 
   /**
-   * Get documents received by a specific address
+   * Get files received by a specific address
    * @param address The recipient's address
-   * @returns Array of document IDs and metadata
+   * @returns Array of file IDs and metadata
    */
-  async getReceivedDocuments(address: string): Promise<StoredDocument[]> {
+  async getReceivedFiles(address: string): Promise<StoredFile[]> {
     try {
       const query = `{
         transactions(
@@ -313,12 +313,12 @@ class ArweaveService {
   }
 
   /**
-   * Parse GraphQL response to extract document metadata
+   * Parse GraphQL response to extract file metadata
    * @param response The GraphQL response
-   * @returns Array of document IDs and metadata
+   * @returns Array of file IDs and metadata
    */
-  private parseGraphQLResponse(response: any): StoredDocument[] {
-    const documents: StoredDocument[] = [];
+  private parseGraphQLResponse(response: any): StoredFile[] {
+    const files: StoredFile[] = [];
 
     if (response.data && response.data.transactions && response.data.transactions.edges) {
       response.data.transactions.edges.forEach((edge: any) => {
@@ -330,7 +330,7 @@ class ArweaveService {
           tags[tag.name] = tag.value;
         });
 
-        const metadata: DocumentMetadata = {
+        const metadata: FileMetadata = {
           name: tags['Document-Name'] || 'Unknown',
           type: tags['Document-Type'] || 'Unknown',
           size: parseInt(tags['Document-Size'] || '0'),
@@ -340,11 +340,11 @@ class ArweaveService {
           description: tags['Description'],
         };
 
-        documents.push({ id, metadata });
+        files.push({ id, metadata });
       });
     }
 
-    return documents;
+    return files;
   }
 }
 

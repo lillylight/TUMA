@@ -18,13 +18,13 @@ const Landing = () => {
   const features = [
     {
       icon: <Shield className="h-6 w-6 text-doc-deep-blue dark:text-blue-400" />,
-      title: "Secure Document Sharing",
-      description: "End-to-end encryption ensures your documents remain private and secure."
+      title: "Secure File Sharing",
+      description: "End-to-end encryption ensures your files remain private and secure."
     },
     {
       icon: <Wallet className="h-6 w-6 text-doc-deep-blue dark:text-blue-400" />,
       title: "Blockchain-Powered",
-      description: "Built on Base network with Arweave storage for permanent, decentralized document storage."
+      description: "Built on Base network with Arweave storage for permanent, decentralized file storage."
     },
     {
       icon: <CheckCircle className="h-6 w-6 text-doc-deep-blue dark:text-blue-400" />,
@@ -35,17 +35,37 @@ const Landing = () => {
 
   const pricingTiers = [
     { size: "Up to 20MB", price: "$1.00" },
-    { size: "21MB to 50MB", price: "$2.00" },
-    { size: "51MB to 100MB", price: "$3.00" }
+    { size: "20MB to 50MB", price: "$2.00" },
+    { size: "50MB to 100MB", price: "$3.00" },
+    { size: "100MB to 200MB", price: "$5.00" }
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
+        {/* Particle Background */}
+        <div className="particles">
+          {Array.from({ length: 50 }).map((_, index) => (
+            <div 
+              key={index}
+              className="particle animate-float"
+              style={{
+                width: `${Math.random() * 5 + 2}px`,
+                height: `${Math.random() * 5 + 2}px`,
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.5 + 0.3,
+                animationDuration: `${Math.random() * 10 + 5}s`,
+                animationDelay: `${Math.random() * 5}s`
+              }}
+            />
+          ))}
+        </div>
+        
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-blue-700/70 mix-blend-multiply z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-blue-700/70 mix-blend-multiply z-10 animate-gradient-shift"></div>
           <div 
             className="absolute inset-0 bg-cover bg-center z-0"
             style={{
@@ -73,13 +93,13 @@ const Landing = () => {
         {/* Hero Content */}
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-48 lg:py-56 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl drop-shadow-md">
-              Secure Document Sharing
+            <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl drop-shadow-md animate-float">
+              Secure File Sharing
             </h1>
-            <div className="mt-6 bg-white/10 backdrop-blur-sm p-6 rounded-xl inline-block max-w-2xl">
+            <div className="mt-6 bg-white/10 backdrop-blur-sm p-6 rounded-xl inline-block max-w-2xl animate-fade-in-up">
               <p className="text-lg leading-8 text-white/90">
-                Share documents securely with blockchain-powered encryption and permanent storage. 
-                Connect your wallet to start sending and receiving documents.
+                Share files securely with blockchain-powered encryption and permanent storage. 
+                Connect your wallet to start sending and receiving files.
               </p>
             </div>
             {/* Buttons removed as requested */}
@@ -123,18 +143,21 @@ const Landing = () => {
           <div className="mx-auto max-w-2xl lg:text-center">
             <h2 className="text-base font-semibold leading-7 text-doc-deep-blue dark:text-blue-400">Secure by Design</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Everything you need for secure document sharing
+              Everything you need for secure file sharing
             </p>
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-              TUMA provides a seamless experience for sending and receiving documents with blockchain security and permanent storage.
+              TUMA provides a seamless experience for sending and receiving files with blockchain security and permanent storage.
             </p>
           </div>
           <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
             <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-3 lg:gap-y-16">
               {features.map((feature, index) => (
-                <div key={index} className="relative pl-16">
+                <div 
+                  key={index} 
+                  className={`relative pl-16 hover-float hover-glow transition-all duration-300 animate-fade-in-up delay-${index * 100}`}
+                >
                   <dt className="text-base font-semibold leading-7 text-gray-900 dark:text-white">
-                    <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900">
+                    <div className="absolute left-0 top-0 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900 animate-pulse-subtle">
                       {feature.icon}
                     </div>
                     {feature.title}
@@ -162,9 +185,12 @@ const Landing = () => {
           <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {pricingTiers.map((tier, index) => (
-                <div key={index} className="rounded-lg bg-blue-50 dark:bg-blue-900/30 p-6 text-center shadow-sm ring-1 ring-inset ring-blue-200 dark:ring-blue-800">
+                <div 
+                  key={index} 
+                  className={`rounded-lg bg-blue-50 dark:bg-blue-900/30 p-6 text-center shadow-sm ring-1 ring-inset ring-blue-200 dark:ring-blue-800 hover-scale hover-glow transition-all duration-300 animate-fade-in-up delay-${index * 100}`}
+                >
                   <h3 className="text-lg font-semibold leading-8 text-gray-900 dark:text-white">{tier.size}</h3>
-                  <p className="mt-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{tier.price}</p>
+                  <p className="mt-4 text-3xl font-bold tracking-tight text-gray-900 dark:text-white animate-pulse-subtle">{tier.price}</p>
                   <p className="mt-6 text-sm leading-6 text-gray-600 dark:text-gray-300">
                     One-time payment for permanent storage
                   </p>
@@ -177,11 +203,11 @@ const Landing = () => {
 
       {/* Connect Button Section - Between Pricing and CTA */}
       <div className="py-8 bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 flex justify-center">
-        <div className="flex items-center justify-center gap-x-6 bg-white dark:bg-gray-800 px-8 py-4 rounded-full shadow-lg z-20">
+        <div className="flex items-center justify-center gap-x-6 bg-white dark:bg-gray-800 px-8 py-4 rounded-full shadow-lg z-20 animate-float">
           <ConnectButton />
           <button 
             onClick={() => navigate("/about")}
-            className="text-sm font-semibold leading-6 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all flex items-center"
+            className="text-sm font-semibold leading-6 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all flex items-center hover-glow"
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
           >
@@ -217,12 +243,12 @@ const Landing = () => {
           </svg>
         </div>
         <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
-          <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
+          <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl animate-pulse-subtle">
               Ready to get started?
             </h2>
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-              Connect your wallet to start sending and receiving documents securely.
+              Connect your wallet to start sending and receiving files securely.
             </p>
             {/* Buttons moved to the top */}
           </div>
