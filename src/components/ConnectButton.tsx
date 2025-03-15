@@ -1,35 +1,45 @@
 
-import { useState } from "react";
 import { Link, User, X } from "lucide-react";
-import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useWallet } from "@/hooks/use-wallet";
 
 const ConnectButton = () => {
-  const [connected, setConnected] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const { address, isConnected, isConnecting, connect, disconnect } = useWallet();
   const navigate = useNavigate();
 
   const handleConnect = () => {
-    if (connected) {
+    if (isConnected) {
       // Already connected
       return;
     }
 
-    // Connect logic
-    setConnecting(true);
-    
-    // Simulate connection process
-    setTimeout(() => {
-      setConnecting(false);
-      setConnected(true);
-      toast.success("Successfully connected");
-    }, 1500);
+    // Connect wallet
+    connect();
   };
 
   const handleDisconnect = () => {
-    setConnected(false);
-    toast.success("Successfully disconnected");
+    // Add a fade-out animation to the current page
+    document.body.classList.add('fade-exit-active');
+    
+    // Wait for animation to complete before disconnecting
+    setTimeout(() => {
+      disconnect();
+      
+      // Navigate to landing page with a smooth transition
+      navigate('/landing');
+      
+      // Remove the animation class after navigation
+      setTimeout(() => {
+        document.body.classList.remove('fade-exit-active');
+        document.body.classList.add('fade-enter-active');
+        
+        // Remove the enter animation class after it completes
+        setTimeout(() => {
+          document.body.classList.remove('fade-enter-active');
+        }, 300);
+      }, 100);
+    }, 300);
   };
 
   const handleNavigation = (path: string) => {
@@ -40,39 +50,39 @@ const ConnectButton = () => {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          onClick={!connected ? handleConnect : undefined}
-          disabled={connecting}
+          onClick={!isConnected ? handleConnect : undefined}
+          disabled={isConnecting}
           className={`
             relative inline-flex items-center gap-2 px-4 py-2 rounded-full 
             transition-all duration-300 
-            ${connected 
+            ${isConnected 
               ? "bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/50 dark:text-green-400 dark:hover:bg-green-900/70" 
               : "bg-doc-deep-blue text-white hover:bg-blue-600 dark:bg-blue-800 dark:hover:bg-blue-700"}
-            ${connecting ? "opacity-80 cursor-wait" : ""}
+            ${isConnecting ? "opacity-80 cursor-wait" : ""}
             shadow-sm hover:shadow
           `}
         >
-          {connected ? (
+          {isConnected ? (
             <User size={16} />
           ) : (
-            <Link size={16} className={connecting ? "animate-spin" : ""} />
+            <Link size={16} className={isConnecting ? "animate-spin" : ""} />
           )}
           <span className="font-medium">
-            {connecting 
+            {isConnecting 
               ? "Connecting..." 
-              : connected 
-                ? "User Profile" 
+              : isConnected 
+                ? "Connected" 
                 : "Connect"
             }
           </span>
           
-          {connected && (
+          {isConnected && (
             <span className="absolute top-1 right-2 w-2 h-2 rounded-full bg-green-500 animate-pulse-subtle" />
           )}
         </button>
       </PopoverTrigger>
       
-      {connected && (
+      {isConnected && (
         <PopoverContent className="w-72 p-0 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
           <div className="p-4 bg-gradient-to-r from-doc-deep-blue to-blue-500 dark:from-blue-900 dark:to-blue-700">
             <div className="flex justify-between items-center">
@@ -80,7 +90,7 @@ const ConnectButton = () => {
               <span className="text-white/80 text-sm">Connected</span>
             </div>
             <div className="mt-2 bg-white/10 text-white text-sm p-2 rounded">
-              <p className="truncate">Connected as: user@example.com</p>
+              <p className="truncate">Connected as: {address ? `${address.slice(0, 6)}...${address.slice(-4)}` : 'Unknown'}</p>
             </div>
           </div>
           
@@ -103,16 +113,6 @@ const ConnectButton = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
               </span>
               <span>Send Document</span>
-            </button>
-            
-            <button 
-              onClick={() => handleNavigation('/profile')}
-              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-            >
-              <span className="w-8 h-8 flex items-center justify-center bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              </span>
-              <span>Profile</span>
             </button>
             
             <div className="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>

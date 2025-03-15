@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { Menu, Moon, Sun, X } from "lucide-react";
@@ -42,7 +41,7 @@ const Header = () => {
               } 
               end
             >
-              Dashboard
+              Send
             </NavLink>
             <NavLink 
               to="/documents" 
@@ -51,22 +50,6 @@ const Header = () => {
               }
             >
               Documents
-            </NavLink>
-            <NavLink 
-              to="/send" 
-              className={({ isActive }) => 
-                isActive ? "nav-link active" : "nav-link"
-              }
-            >
-              Send
-            </NavLink>
-            <NavLink 
-              to="/profile" 
-              className={({ isActive }) => 
-                isActive ? "nav-link active" : "nav-link"
-              }
-            >
-              Profile
             </NavLink>
             <NavLink 
               to="/about" 
@@ -103,7 +86,7 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
               end
             >
-              Dashboard
+              Send
             </NavLink>
             <NavLink 
               to="/documents" 
@@ -113,24 +96,6 @@ const Header = () => {
               onClick={() => setIsMenuOpen(false)}
             >
               Documents
-            </NavLink>
-            <NavLink 
-              to="/send" 
-              className={({ isActive }) => 
-                isActive ? "nav-link active" : "nav-link"
-              }
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Send
-            </NavLink>
-            <NavLink 
-              to="/profile" 
-              className={({ isActive }) => 
-                isActive ? "nav-link active" : "nav-link"
-              }
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Profile
             </NavLink>
             <NavLink 
               to="/about" 
