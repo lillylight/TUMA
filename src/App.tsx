@@ -15,7 +15,7 @@ import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
 // Contract address on Base network
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000"; // Replace with actual deployed contract address
+const CONTRACT_ADDRESS = "0x4B5F5f6A21F65AB74d6C0B8fE0C6B3Fc70267e38"; // Deployed DocumentPayment contract on Base network
 
 const queryClient = new QueryClient();
 

@@ -18,7 +18,7 @@ const config = createConfig({
       appName: 'TUMA Document Exchange',
     }),
     walletConnect({
-      projectId: 'YOUR_PROJECT_ID', // Replace with your WalletConnect project ID
+      projectId: 'c573024101410d42fe8eb71324a2734b', // WalletConnect project ID for Base network
     }),
     injected(),
   ],
