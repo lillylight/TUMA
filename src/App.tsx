@@ -2,10 +2,10 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/use-theme";
-import WalletConfigProvider, { useWallet } from "@/hooks/use-wallet";
+import { OnchainProviders } from "@/lib/onchain-providers";
+import { OnchainWalletProvider, useOnchainWallet } from "@/hooks/use-onchain-wallet";
 import { useEffect } from "react";
 import { contractService } from "@/lib/contract-service";
 import Landing from "./pages/Landing";
@@ -14,10 +14,11 @@ import Send from "./pages/Send";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
+// Import OnchainKit styles
+import '@coinbase/onchainkit/styles.css';
+
 // Contract address on Base network
 const CONTRACT_ADDRESS = "0x4B5F5f6A21F65AB74d6C0B8fE0C6B3Fc70267e38"; // Deployed DocumentPayment contract on Base network
-
-const queryClient = new QueryClient();
 
 // Protected route component
 interface ProtectedRouteProps {
@@ -25,7 +26,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
-  const { isConnected } = useWallet();
+  const { isConnected } = useOnchainWallet();
   
   if (!isConnected) {
     return <Navigate to="/landing" replace />;
@@ -35,7 +36,7 @@ const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
 };
 
 const AppContent = () => {
-  const { isConnected, address } = useWallet();
+  const { isConnected, address } = useOnchainWallet();
   
   // Initialize contract service when wallet is connected
   useEffect(() => {
@@ -62,7 +63,6 @@ const AppContent = () => {
             <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
             <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
             <Route path="/about" element={<About />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
@@ -73,11 +73,11 @@ const AppContent = () => {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <WalletConfigProvider>
+    <OnchainProviders>
+      <OnchainWalletProvider>
         <AppContent />
-      </WalletConfigProvider>
-    </QueryClientProvider>
+      </OnchainWalletProvider>
+    </OnchainProviders>
   );
 };
 
