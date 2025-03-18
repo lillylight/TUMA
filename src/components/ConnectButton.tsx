@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Link, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import { useOnchainWallet } from "@/hooks/use-onchain-wallet";
 import OnchainWalletSelector from "./OnchainWalletSelector";
 import {
@@ -20,18 +20,31 @@ import {
   EthBalance
 } from '@coinbase/onchainkit/identity';
 
+// Custom wrapper for WalletDropdownLink that handles navigation using React Router
+const RouterLink = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <div 
+      className={className}
+      onClick={() => navigate(href)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          navigate(href);
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+};
+
 const ConnectButton = () => {
   const { address, isConnected, isConnecting, disconnect } = useOnchainWallet();
   const navigate = useNavigate();
   const [isWalletSelectorOpen, setIsWalletSelectorOpen] = useState(false);
-
-  const handleConnect = () => {
-    if (isConnected) {
-      return;
-    }
-    
-    setIsWalletSelectorOpen(true);
-  };
 
   const handleDisconnect = () => {
     document.body.classList.add('fade-exit-active');
@@ -50,10 +63,6 @@ const ConnectButton = () => {
         }, 300);
       }, 100);
     }, 300);
-  };
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
   };
 
   return (
@@ -98,34 +107,40 @@ const ConnectButton = () => {
               <EthBalance className="text-white/80" />
             </Identity>
             
-            <WalletDropdownLink
-              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            <RouterLink
               href="/documents"
-              onClick={() => handleNavigation('/documents')}
+              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               My Files
-            </WalletDropdownLink>
+            </RouterLink>
             
-            <WalletDropdownLink
-              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            <RouterLink
               href="/send"
-              onClick={() => handleNavigation('/send')}
+              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               Send File
-            </WalletDropdownLink>
+            </RouterLink>
             
-            <WalletDropdownLink
-              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            <RouterLink
               href="/profile"
-              onClick={() => handleNavigation('/profile')}
+              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               My Profile
-            </WalletDropdownLink>
+            </RouterLink>
             
-            <WalletDropdownDisconnect 
-              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors"
+            <div 
+              className="w-full text-left px-4 py-2.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 transition-colors cursor-pointer"
               onClick={handleDisconnect}
-            />
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleDisconnect();
+                }
+              }}
+            >
+              Disconnect
+            </div>
           </WalletDropdown>
         </Wallet>
       </div>

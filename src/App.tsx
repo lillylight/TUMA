@@ -13,6 +13,7 @@ import Documents from "./pages/Documents";
 import Send from "./pages/Send";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
 
 // Import OnchainKit styles
 import '@coinbase/onchainkit/styles.css';
@@ -62,6 +63,7 @@ const AppContent = () => {
             <Route path="/landing" element={<Landing />} />
             <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
             <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
+            <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
             <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

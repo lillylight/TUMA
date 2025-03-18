@@ -22,17 +22,5 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     outDir: 'dist',
-    rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'index.html'),
-      },
-      output: {
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]'
-      }
-    },
-    // Copy the manifest.json and other extension files to the dist folder
-    copyPublicDir: true,
   }
 }));
