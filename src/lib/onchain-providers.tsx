@@ -6,6 +6,9 @@ import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors';
 import { OnchainKitProvider } from '@coinbase/onchainkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+// Client API key for OnchainKit
+const ONCHAINKIT_API_KEY = 'x2oazcx7sSFU0P41ucJj2fJ6fePAmMZf';
+
 // Create a Wagmi config
 const wagmiConfig = createConfig({
   chains: [base, mainnet],
@@ -33,7 +36,7 @@ export function OnchainProviders({ children }: { children: ReactNode }) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <OnchainKitProvider>
+        <OnchainKitProvider chain={base} apiKey={ONCHAINKIT_API_KEY}>
           {children}
         </OnchainKitProvider>
       </QueryClientProvider>
