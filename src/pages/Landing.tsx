@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { ArrowRight, CheckCircle, Shield, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +19,7 @@ const Landing = () => {
   const features = [
     {
       icon: <Shield className="h-6 w-6 text-doc-deep-blue dark:text-blue-400" />,
-      title: "Secure File Sharing",
+      title: "Secure Document Sharing",
       description: "End-to-end encryption ensures your files remain private and secure."
     },
     {
@@ -94,7 +95,7 @@ const Landing = () => {
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-48 lg:py-56 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl drop-shadow-md animate-float">
-              Secure File Sharing
+              TUMA
             </h1>
             <div className="mt-6 bg-white/10 backdrop-blur-sm p-6 rounded-xl inline-block max-w-2xl animate-fade-in-up">
               <p className="text-lg leading-8 text-white/90">
@@ -106,10 +107,22 @@ const Landing = () => {
           </div>
         </div>
         
-        {/* Wave Divider */}
+        {/* Improved Wave Divider with smoother curve and better contrast */}
         <div className="absolute bottom-0 left-0 right-0 z-10">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-auto">
-            <path fill="currentColor" className="text-white dark:text-gray-900" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,149.3C960,160,1056,160,1152,138.7C1248,117,1344,75,1392,53.3L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 1440 320" 
+            preserveAspectRatio="none" 
+            className="w-full h-auto"
+            style={{ display: 'block' }}
+          >
+            <path 
+              fill="currentColor" 
+              className="text-white dark:text-gray-900" 
+              fillOpacity="1" 
+              d="M0,128L80,133.3C160,139,320,149,480,149.3C640,149,800,139,960,144C1120,149,1280,171,1360,181.3L1440,192L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"
+            >
+            </path>
           </svg>
         </div>
       </div>
@@ -143,7 +156,7 @@ const Landing = () => {
           <div className="mx-auto max-w-2xl lg:text-center">
             <h2 className="text-base font-semibold leading-7 text-doc-deep-blue dark:text-blue-400">Secure by Design</h2>
             <p className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-              Everything you need for secure file sharing
+              Everything you need for secure document sharing
             </p>
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
               TUMA provides a seamless experience for sending and receiving files with blockchain security and permanent storage.
@@ -245,7 +258,7 @@ const Landing = () => {
         <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
           <div className="mx-auto max-w-2xl text-center animate-fade-in-up">
             <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl animate-pulse-subtle">
-              Ready to get started?
+              Ready to get started with TUMA?
             </h2>
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
               Connect your wallet to start sending and receiving files securely.
@@ -284,3 +297,4 @@ const Landing = () => {
 };
 
 export default Landing;
+
