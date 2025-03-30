@@ -12,6 +12,7 @@ import Landing from "./pages/Landing";
 import Documents from "./pages/Documents";
 import Send from "./pages/Send";
 import About from "./pages/About";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 // Contract address on Base network
@@ -61,6 +62,7 @@ const AppContent = () => {
             <Route path="/landing" element={<Landing />} />
             <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
             <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
+            <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
             <Route path="/about" element={<About />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

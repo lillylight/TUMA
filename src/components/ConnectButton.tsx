@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, User, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -129,7 +130,7 @@ const ConnectButton = () => {
                 <span className="w-8 h-8 flex items-center justify-center bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 </span>
-                <span>My Profile</span>
+                <span>Dashboard</span>
               </button>
               
               <div className="h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
