@@ -1,12 +1,13 @@
+
 import { useState } from "react";
 import { Link, User, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useWallet } from "@/hooks/use-wallet";
+import { useOnchainWallet } from "@/hooks/use-onchain-wallet";
 import WalletSelector from "./WalletSelector";
 
 const ConnectButton = () => {
-  const { address, isConnected, isConnecting, connect, disconnect } = useWallet();
+  const { address, isConnected, isConnecting, connect, disconnect } = useOnchainWallet();
   const navigate = useNavigate();
   const [isWalletSelectorOpen, setIsWalletSelectorOpen] = useState(false);
 
@@ -20,8 +21,14 @@ const ConnectButton = () => {
     setIsWalletSelectorOpen(true);
   };
 
-  const handleConnectWallet = (connectorId: string) => {
-    connect(connectorId);
+  const handleConnectWallet = async (walletType: string) => {
+    try {
+      await connect({
+        wallet: walletType,
+      });
+    } catch (error) {
+      console.error("Failed to connect wallet:", error);
+    }
   };
 
   const handleDisconnect = () => {
