@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { getDefaultWallets } from '@coinbase/onchainkit';
 import { toast } from 'sonner';
 
 interface WalletSelectorProps {
@@ -12,7 +11,6 @@ interface WalletSelectorProps {
 }
 
 const WalletSelector = ({ isOpen, onClose, onConnect }: WalletSelectorProps) => {
-  const availableWallets = getDefaultWallets();
   const [isCreatingSmartWallet, setIsCreatingSmartWallet] = useState(false);
 
   const handleConnectWallet = (walletType: string) => {

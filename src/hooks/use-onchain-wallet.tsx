@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { connectWallet, DisconnectFn, getDefaultWallets, ConnectFn } from '@coinbase/onchainkit';
+import { createWalletClient, getAccount, disconnect } from '@coinbase/onchainkit';
 import { base, mainnet } from 'viem/chains';
 import { toast } from 'sonner';
 
@@ -9,8 +9,8 @@ interface OnchainWalletContextType {
   address: string | undefined;
   isConnected: boolean;
   isConnecting: boolean;
-  connect: ConnectFn;
-  disconnect: DisconnectFn;
+  connect: (options?: any) => Promise<string | null>;
+  disconnect: () => Promise<void>;
   error: Error | null;
 }
 
@@ -36,53 +36,65 @@ export const OnchainWalletProvider = ({ children }: OnchainWalletProviderProps) 
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   
-  // Initialize OnchainKit
-  const { connect, disconnect, walletAddress } = connectWallet({
-    chains: [base, mainnet],
-    wallets: getDefaultWallets(),
+  // Initialize wallet client
+  const walletClient = createWalletClient({
     appName: 'TUMA Document Exchange',
-    onConnect: ({ walletAddress }) => {
-      setAddress(walletAddress);
-      setIsConnected(true);
-      toast.success('Wallet connected successfully');
-    },
-    onDisconnect: () => {
-      setAddress(undefined);
-      setIsConnected(false);
-      toast.success('Wallet disconnected');
-    },
-    onConnectError: (err) => {
-      console.error('Connection error:', err);
-      setError(err);
-      toast.error('Failed to connect wallet');
-      setIsConnecting(false);
-    }
+    chain: base
   });
 
-  // Update connection status when wallet address changes
+  // Check for existing connection on load
   useEffect(() => {
-    if (walletAddress) {
-      setAddress(walletAddress);
-      setIsConnected(true);
-    } else {
-      setAddress(undefined);
-      setIsConnected(false);
-    }
-  }, [walletAddress]);
-
-  // Wrap connect function to manage connecting state
-  const handleConnect: ConnectFn = async (options) => {
+    const checkConnection = async () => {
+      try {
+        const account = await getAccount();
+        if (account) {
+          setAddress(account);
+          setIsConnected(true);
+        }
+      } catch (err) {
+        console.error('Error checking connection:', err);
+      }
+    };
+    
+    checkConnection();
+  }, []);
+  
+  // Connect function
+  const connect = async (options?: any) => {
     try {
       setIsConnecting(true);
       setError(null);
-      const result = await connect(options);
-      return result;
+      
+      const account = await walletClient.connectWallet();
+      
+      if (account) {
+        setAddress(account);
+        setIsConnected(true);
+        toast.success('Wallet connected successfully');
+        return account;
+      }
+      return null;
     } catch (err) {
       console.error('Connection error:', err);
-      setError(err instanceof Error ? err : new Error('Failed to connect wallet'));
-      throw err;
+      const error = err instanceof Error ? err : new Error('Failed to connect wallet');
+      setError(error);
+      toast.error('Failed to connect wallet');
+      throw error;
     } finally {
       setIsConnecting(false);
+    }
+  };
+  
+  // Disconnect function
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      setAddress(undefined);
+      setIsConnected(false);
+      toast.success('Wallet disconnected');
+    } catch (err) {
+      console.error('Disconnect error:', err);
+      toast.error('Failed to disconnect wallet');
     }
   };
 
@@ -92,8 +104,8 @@ export const OnchainWalletProvider = ({ children }: OnchainWalletProviderProps) 
         address,
         isConnected,
         isConnecting,
-        connect: handleConnect,
-        disconnect,
+        connect,
+        disconnect: handleDisconnect,
         error,
       }}
     >
