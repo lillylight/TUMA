@@ -1,6 +1,6 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { createWalletClient, getAccount, disconnect } from '@coinbase/onchainkit';
+import { createOnchainKit, OnchainKitOptions } from '@coinbase/onchainkit';
 import { base, mainnet } from 'viem/chains';
 import { toast } from 'sonner';
 
@@ -36,19 +36,20 @@ export const OnchainWalletProvider = ({ children }: OnchainWalletProviderProps) 
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   
-  // Initialize wallet client
-  const walletClient = createWalletClient({
+  // Initialize OnchainKit
+  const onchainKit = createOnchainKit({
     appName: 'TUMA Document Exchange',
-    chain: base
+    chain: base,
   });
 
   // Check for existing connection on load
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const account = await getAccount();
-        if (account) {
-          setAddress(account);
+        // Try to get the connected account from localStorage or other storage mechanism
+        const savedAddress = localStorage.getItem('wallet_address');
+        if (savedAddress) {
+          setAddress(savedAddress);
           setIsConnected(true);
         }
       } catch (err) {
@@ -65,11 +66,14 @@ export const OnchainWalletProvider = ({ children }: OnchainWalletProviderProps) 
       setIsConnecting(true);
       setError(null);
       
-      const account = await walletClient.connectWallet();
+      // Use the connect method from onchainKit
+      const account = await onchainKit.connectWallet();
       
       if (account) {
         setAddress(account);
         setIsConnected(true);
+        // Save the address to localStorage for persistence
+        localStorage.setItem('wallet_address', account);
         toast.success('Wallet connected successfully');
         return account;
       }
@@ -88,9 +92,16 @@ export const OnchainWalletProvider = ({ children }: OnchainWalletProviderProps) 
   // Disconnect function
   const handleDisconnect = async () => {
     try {
-      await disconnect();
+      // Use the disconnect method from onchainKit
+      await onchainKit.disconnectWallet();
+      
+      // Clear the address and connection state
       setAddress(undefined);
       setIsConnected(false);
+      
+      // Remove from localStorage
+      localStorage.removeItem('wallet_address');
+      
       toast.success('Wallet disconnected');
     } catch (err) {
       console.error('Disconnect error:', err);
