@@ -1,20 +1,21 @@
-
 import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useConnect } from 'wagmi';
 import { toast } from 'sonner';
 
 interface WalletSelectorProps {
   isOpen: boolean;
   onClose: () => void;
-  onConnect: (walletType: string) => void;
+  onConnect: (connectorId: string) => void;
 }
 
 const WalletSelector = ({ isOpen, onClose, onConnect }: WalletSelectorProps) => {
+  const { connectors } = useConnect();
   const [isCreatingSmartWallet, setIsCreatingSmartWallet] = useState(false);
 
-  const handleConnectWallet = (walletType: string) => {
-    onConnect(walletType);
+  const handleConnectWallet = (connectorId: string) => {
+    onConnect(connectorId);
     onClose();
   };
 
@@ -26,7 +27,8 @@ const WalletSelector = ({ isOpen, onClose, onConnect }: WalletSelectorProps) => 
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // After creation, we would connect to it
-      onConnect('coinbaseWallet');
+      // For now, we'll just use the injected connector
+      onConnect('injected');
       toast.success('Base Smart Wallet created successfully');
       onClose();
     } catch (error) {
@@ -48,25 +50,6 @@ const WalletSelector = ({ isOpen, onClose, onConnect }: WalletSelectorProps) => 
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
-          {/* Coinbase Wallet */}
-          <button
-            onClick={() => handleConnectWallet('coinbaseWallet')}
-            className="flex items-center justify-between w-full p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <img 
-                src="https://altcoinsbox.com/wp-content/uploads/2023/01/coinbase-wallet-logo.png" 
-                alt="Coinbase Wallet" 
-                className="w-8 h-8"
-              />
-              <div className="text-left">
-                <p className="font-medium">Coinbase Wallet</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Connect to your Coinbase wallet</p>
-              </div>
-            </div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-          </button>
-          
           {/* MetaMask */}
           <button
             onClick={() => handleConnectWallet('metaMask')}
@@ -81,6 +64,25 @@ const WalletSelector = ({ isOpen, onClose, onConnect }: WalletSelectorProps) => 
               <div className="text-left">
                 <p className="font-medium">MetaMask</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Connect to your MetaMask wallet</p>
+              </div>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
+          </button>
+          
+          {/* Coinbase Wallet */}
+          <button
+            onClick={() => handleConnectWallet('coinbaseWallet')}
+            className="flex items-center justify-between w-full p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <img 
+                src="https://altcoinsbox.com/wp-content/uploads/2023/01/coinbase-wallet-logo.png" 
+                alt="Coinbase Wallet" 
+                className="w-8 h-8"
+              />
+              <div className="text-left">
+                <p className="font-medium">Coinbase Wallet</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Connect to your Coinbase wallet</p>
               </div>
             </div>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>

@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { OnchainWalletProvider, useOnchainWallet } from "@/hooks/use-onchain-wallet";
+import WalletConfigProvider, { useWallet } from "@/hooks/use-wallet";
 import { useEffect } from "react";
 import { contractService } from "@/lib/contract-service";
 import Landing from "./pages/Landing";
@@ -25,7 +25,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
-  const { isConnected } = useOnchainWallet();
+  const { isConnected } = useWallet();
   
   if (!isConnected) {
     return <Navigate to="/landing" replace />;
@@ -35,7 +35,7 @@ const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
 };
 
 const AppContent = () => {
-  const { isConnected, address } = useOnchainWallet();
+  const { isConnected, address } = useWallet();
   
   // Initialize contract service when wallet is connected
   useEffect(() => {
@@ -74,9 +74,9 @@ const AppContent = () => {
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <OnchainWalletProvider>
+      <WalletConfigProvider>
         <AppContent />
-      </OnchainWalletProvider>
+      </WalletConfigProvider>
     </QueryClientProvider>
   );
 };

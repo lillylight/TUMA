@@ -1,12 +1,13 @@
+
 import { useState } from "react";
 import { ArrowRight, CheckCircle, Shield, Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useOnchainWallet } from "@/hooks/use-onchain-wallet";
+import { useWallet } from "@/hooks/use-wallet";
 import ConnectButton from "@/components/ConnectButton";
 
 const Landing = () => {
   const navigate = useNavigate();
-  const { isConnected } = useOnchainWallet();
+  const { isConnected } = useWallet();
   const [isHovering, setIsHovering] = useState(false);
 
   // If wallet is connected, redirect to send page
@@ -296,3 +297,4 @@ const Landing = () => {
 };
 
 export default Landing;
+
