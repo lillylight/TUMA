@@ -92,7 +92,7 @@ const Landing = () => {
         </header>
         
         {/* Hero Content */}
-        <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-48 lg:py-56 lg:px-8">
+        <div className="relative z-10 mx-auto max-w-7xl px-6 py-32 sm:py-36 lg:py-44 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl drop-shadow-md animate-float">
               TUMA
@@ -103,32 +103,31 @@ const Landing = () => {
                 Connect your wallet to start sending and receiving files.
               </p>
             </div>
-            {/* Buttons removed as requested */}
           </div>
         </div>
         
-        {/* Improved Wave Divider with smoother curve and better contrast */}
-        <div className="absolute bottom-0 left-0 right-0 z-10">
+        {/* Improved Wave Divider with smoother curve and better contrast - Modified to reduce whitespace */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 translate-y-1">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
-            viewBox="0 0 1440 320" 
+            viewBox="0 0 1440 180" 
             preserveAspectRatio="none" 
-            className="w-full h-auto"
+            className="w-full h-auto -mb-1"
             style={{ display: 'block' }}
           >
             <path 
               fill="currentColor" 
               className="text-white dark:text-gray-900" 
               fillOpacity="1" 
-              d="M0,128L80,133.3C160,139,320,149,480,149.3C640,149,800,139,960,144C1120,149,1280,171,1360,181.3L1440,192L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"
+              d="M0,96L80,101.3C160,107,320,117,480,117.3C640,117,800,107,960,112C1120,117,1280,139,1360,149.3L1440,160L1440,320L1360,320C1280,320,1120,320,960,320C800,320,640,320,480,320C320,320,160,320,80,320L0,320Z"
             >
             </path>
           </svg>
         </div>
       </div>
 
-      {/* Features Section */}
-      <div className="py-24 sm:py-32 relative overflow-hidden">
+      {/* Features Section - Adjusted to reduce spacing */}
+      <div className="pt-12 pb-16 sm:pt-16 sm:pb-24 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -162,8 +161,8 @@ const Landing = () => {
               TUMA provides a seamless experience for sending and receiving files with blockchain security and permanent storage.
             </p>
           </div>
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
-            <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-10 lg:max-w-none lg:grid-cols-3 lg:gap-y-16">
+          <div className="mx-auto mt-12 max-w-2xl sm:mt-16 lg:mt-18 lg:max-w-4xl">
+            <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-8 lg:max-w-none lg:grid-cols-3 lg:gap-y-12">
               {features.map((feature, index) => (
                 <div 
                   key={index} 
@@ -183,8 +182,23 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* Pricing Section */}
-      <div className="py-24 sm:py-32 pb-16 bg-white dark:bg-gray-900">
+      {/* Connect Button Section - Integrated between sections for better flow */}
+      <div className="py-6 bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 flex justify-center">
+        <div className="flex items-center justify-center gap-x-6 bg-white dark:bg-gray-800 px-8 py-4 rounded-full shadow-lg z-20 animate-float">
+          <ConnectButton />
+          <button 
+            onClick={() => navigate("/about")}
+            className="text-sm font-semibold leading-6 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all flex items-center hover-glow"
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+          >
+            Learn more <ArrowRight className={`ml-1 h-4 w-4 transition-transform ${isHovering ? 'translate-x-1' : ''}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Pricing Section - Adjusted spacing */}
+      <div className="py-16 sm:py-24 bg-white dark:bg-gray-900">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl lg:text-center">
             <h2 className="text-base font-semibold leading-7 text-doc-deep-blue dark:text-blue-400">Pricing</h2>
@@ -195,7 +209,7 @@ const Landing = () => {
               Pay once for permanent storage. No subscriptions or hidden fees.
             </p>
           </div>
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-4xl">
+          <div className="mx-auto mt-12 max-w-2xl sm:mt-16 lg:mt-18 lg:max-w-4xl">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {pricingTiers.map((tier, index) => (
                 <div 
@@ -213,24 +227,9 @@ const Landing = () => {
           </div>
         </div>
       </div>
-
-      {/* Connect Button Section - Between Pricing and CTA */}
-      <div className="py-8 bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 flex justify-center">
-        <div className="flex items-center justify-center gap-x-6 bg-white dark:bg-gray-800 px-8 py-4 rounded-full shadow-lg z-20 animate-float">
-          <ConnectButton />
-          <button 
-            onClick={() => navigate("/about")}
-            className="text-sm font-semibold leading-6 bg-blue-50 dark:bg-blue-900/30 text-gray-900 dark:text-white px-4 py-2 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-all flex items-center hover-glow"
-            onMouseEnter={() => setIsHovering(true)}
-            onMouseLeave={() => setIsHovering(false)}
-          >
-            Learn more <ArrowRight className={`ml-1 h-4 w-4 transition-transform ${isHovering ? 'translate-x-1' : ''}`} />
-          </button>
-        </div>
-      </div>
         
-      {/* CTA Section */}
-      <div className="py-24 sm:py-32 relative overflow-hidden">
+      {/* CTA Section - Adjusted spacing */}
+      <div className="py-16 sm:py-24 relative overflow-hidden">
         
         {/* Background Pattern */}
         <div className="absolute inset-0 z-0 opacity-10 dark:opacity-20">
@@ -263,13 +262,12 @@ const Landing = () => {
             <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
               Connect your wallet to start sending and receiving files securely.
             </p>
-            {/* Buttons moved to the top */}
           </div>
         </div>
       </div>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-900">
+      <footer className="bg-white dark:bg-gray-900 mt-0">
         <div className="mx-auto max-w-7xl px-6 py-12 md:flex md:items-center md:justify-between lg:px-8">
           <div className="flex justify-center space-x-6 md:order-2">
             <a href="#" className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
@@ -297,4 +295,3 @@ const Landing = () => {
 };
 
 export default Landing;
-
