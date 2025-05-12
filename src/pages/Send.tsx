@@ -1,25 +1,38 @@
-import { useState, useEffect } from "react";
-import { FileUp, Send as SendIcon, User, Users, X, AlertCircle, Coins, Clock } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { FileUp, Send as SendIcon, User, Users, X, AlertCircle, Coins, Clock, Bell } from "lucide-react";
 import { toast } from "sonner";
 import Header from "@/components/Header";
-import { useWallet } from "@/hooks/use-wallet";
 import { arweaveService, FileMetadata } from "@/lib/arweave-service";
-import { contractService, PaymentCurrency, RecipientInfo } from "@/lib/contract-service";
-import { ethers } from "ethers";
+import { encryptFileBufferHKDF } from '@/lib/encryption';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { useAccount } from 'wagmi';
+import { Checkout, CheckoutButton, CheckoutStatus } from '@coinbase/onchainkit/checkout';
 
 const Send = () => {
-  const { address, isConnected } = useWallet();
+  // ...existing state declarations...
+  const [uploadTimeoutId, setUploadTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [recipient, setRecipient] = useState("");
   const [recipientAddress, setRecipientAddress] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState("0.01");
-  const [showPaymentConfirmation, setShowPaymentConfirmation] = useState(false);
+  const [calculatedFee, setCalculatedFee] = useState<string | null>(null);
+  const [fileSizeTier, setFileSizeTier] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [serviceFee, setServiceFee] = useState<string>('2.00'); // Example: $2.00 USDC
+  const [paymentCurrency, setPaymentCurrency] = useState<'USDC'>('USDC');
   const [documentId, setDocumentId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentCurrency>(PaymentCurrency.ETH);
-  const [usdcBalance, setUsdcBalance] = useState<bigint>(BigInt(0));
-  const [usdcDecimals, setUsdcDecimals] = useState<number>(6);
+  const [arweaveTxId, setArweaveTxId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'processing' | 'success' | 'error'>('idle');
+  const [chargeId, setChargeId] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false); // Controls the Checkout modal
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadComplete, setUploadComplete] = useState(false);
+
+  const { address: senderAddress } = useAccount();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -45,7 +58,7 @@ const Send = () => {
       return;
     }
 
-    if (!recipientAddress || !ethers.isAddress(recipientAddress)) {
+    if (!recipientAddress) {
       toast.error("Please enter a valid recipient wallet address");
       return;
     }
@@ -59,7 +72,7 @@ const Send = () => {
         name: file.name,
         type: file.type,
         size: file.size,
-        sender: address || "",
+        sender: senderAddress,
         recipient: recipientAddress,
         timestamp: Date.now(),
         description: message || undefined
@@ -70,7 +83,8 @@ const Send = () => {
       setDocumentId(tempDocId);
       
       // Show payment confirmation
-      setShowPaymentConfirmation(true);
+      setShowPaymentDialog(true);
+      handlePostPaymentUpload();
       setSending(false);
     } catch (error) {
       console.error("Error preparing document:", error);
@@ -79,169 +93,284 @@ const Send = () => {
     }
   };
 
-  const [calculatedFee, setCalculatedFee] = useState<string | null>(null);
-  const [calculatedFeeWei, setCalculatedFeeWei] = useState<bigint | null>(null);
-  const [fileSizeTier, setFileSizeTier] = useState<string | null>(null);
-  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
-  const [isResolvingName, setIsResolvingName] = useState(false);
-
-  // Calculate fee when file changes
   useEffect(() => {
-    const calculateFeeForFile = async () => {
-      if (file && isConnected && contractService.isInitialized()) {
-        try {
-          const { fee, tier } = await contractService.calculateFee(file.size);
-          setCalculatedFeeWei(fee);
-          setCalculatedFee(contractService.formatEther(fee));
-          setFileSizeTier(contractService.getTierName(tier));
-          setPaymentAmount(contractService.formatEther(fee));
-        } catch (error) {
-          console.error("Error calculating fee:", error);
-          setCalculatedFee(null);
-          setCalculatedFeeWei(null);
-          setFileSizeTier(null);
-        }
-      }
-    };
-
-    calculateFeeForFile();
-  }, [file, isConnected]);
-
-  // Get USDC balance and decimals
-  useEffect(() => {
-    const getUSDCInfo = async () => {
-      if (isConnected && contractService.isInitialized()) {
-        try {
-          const balance = await contractService.getUSDCBalance();
-          const decimals = await contractService.getUSDCDecimals();
-          setUsdcBalance(balance);
-          setUsdcDecimals(decimals);
-        } catch (error) {
-          console.error("Error getting USDC info:", error);
-        }
-      }
-    };
-
-    getUSDCInfo();
-  }, [isConnected]);
-
-  // Resolve ENS or Base name when recipient changes
-  useEffect(() => {
-    const resolveRecipientName = async () => {
-      if (recipientAddress && recipientAddress.includes('.') && isConnected && contractService.isInitialized()) {
-        setIsResolvingName(true);
-        try {
-          const resolved = await contractService.resolveName(recipientAddress);
-          setResolvedAddress(resolved);
-          setIsResolvingName(false);
-        } catch (error) {
-          console.error("Error resolving name:", error);
-          setResolvedAddress(null);
-          setIsResolvingName(false);
-        }
-      } else if (recipientAddress && ethers.isAddress(recipientAddress)) {
-        setResolvedAddress(recipientAddress);
+    if (file) {
+      if (file.size < 2 * 1024 * 1024) {
+        setFileSizeTier('Test Tier (<2MB)');
+        setServiceFee('0.05');
+      } else if (file.size < 10e6) {
+        setFileSizeTier('Medium (2-10MB)');
+        setServiceFee('5.00');
+      } else if (file.size < 10e6) {
+        setFileSizeTier('Medium (1-10MB)');
+        setServiceFee('5.00');
+      } else if (file.size < 100e6) {
+        setFileSizeTier('Large (10-100MB)');
+        setServiceFee('10.00');
       } else {
-        setResolvedAddress(null);
+        setFileSizeTier('Extra Large (>100MB)');
+        setServiceFee('25.00');
       }
-    };
-
-    resolveRecipientName();
-  }, [recipientAddress, isConnected]);
-
-  const confirmPaymentAndSend = async () => {
-    if (!file || !recipientAddress || !documentId) return;
-    
-    // Use resolved address if available, otherwise use the input address
-    const finalRecipientAddress = resolvedAddress || recipientAddress;
-    
-    // Validate the final address
-    if (!ethers.isAddress(finalRecipientAddress)) {
-      toast.error("Invalid recipient address");
-      return;
     }
-    
-    try {
-      setSending(true);
-      
-      // Process payment via smart contract with file size
-      let txHash: string;
-      
-      if (paymentMethod === PaymentCurrency.ETH) {
-        // Pay with ETH
-        const amountWei = contractService.parseEther(paymentAmount);
-        txHash = await contractService.payForDocumentWithETH(documentId, finalRecipientAddress, file.size, amountWei);
-      } else {
-        // Pay with USDC
-        // Convert ETH amount to USDC amount (assuming 1:1 for simplicity)
-        // In a real app, you would use an oracle to get the exchange rate
-        const usdcAmount = contractService.parseUSDC(paymentAmount, usdcDecimals);
-        txHash = await contractService.payForDocumentWithUSDC(documentId, finalRecipientAddress, file.size, usdcAmount);
+  }, [file]);
+
+  // Effect: When chargeId changes and paymentStatus is 'pending', wait 30s before starting upload
+
+  // Auto-close payment dialog after 10 seconds if not closed by user
+
+  // Cleanup timeout if upload starts or completes
+  useEffect(() => {
+    if (uploading || uploadComplete) {
+      if (uploadTimeoutId) {
+        clearTimeout(uploadTimeoutId);
+        setUploadTimeoutId(null);
       }
-      
-      // Upload to Arweave after payment is confirmed
-      const metadata: FileMetadata = {
+    }
+  }, [uploading, uploadComplete]);
+
+  // Auto-close dialog 5 seconds after upload completes
+  useEffect(() => {
+    if (uploadComplete) {
+      const closeTimer = setTimeout(() => {
+        setShowPaymentDialog(false);
+      }, 5000);
+      return () => clearTimeout(closeTimer);
+    }
+  }, [uploadComplete]);
+
+  // Poll Coinbase Commerce charge status
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (
+      paymentStatus === 'processing' &&
+      chargeId &&
+      !uploading &&
+      !uploadComplete &&
+      !uploadError
+    ) {
+      const poll = async () => {
+        try {
+          const res = await fetch(`/api/chargeStatus?chargeId=${chargeId}`);
+          const data = await res.json();
+          if (data.statusName && ['CONFIRMED', 'COMPLETED', 'confirmed', 'completed', 'RESOLVED', 'resolved', 'PAID', 'paid', 'SUCCESS', 'success'].includes(data.statusName)) {
+            setPaymentStatus('success');
+            setPaymentError(null);
+            setShowPaymentDialog(false);
+            setTimeout(() => handlePostPaymentUpload(), 500); // slight delay for UI
+          } else if (data.statusName && data.statusName.toLowerCase().includes('error')) {
+            setPaymentStatus('error');
+            setPaymentError('Payment failed');
+          }
+        } catch (e: any) {
+          // Optionally: setPaymentError(e.message);
+        }
+      };
+      poll();
+      interval = setInterval(poll, 5000);
+    }
+    return () => interval && clearInterval(interval);
+  }, [paymentStatus, chargeId, uploading, uploadComplete, uploadError]);
+
+  // Real Coinbase Commerce checkout handler
+  const chargeHandler = useCallback(async () => {
+    try {
+      setPaymentStatus('processing');
+      setPaymentError(null);
+      // Call backend to create charge with correct amount
+      const response = await fetch('http://localhost:4000/api/createCharge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: serviceFee,
+          currency: paymentCurrency,
+          name: 'Document Payment',
+          description: `Payment for document (tier: ${fileSizeTier})`,
+          metadata: { sender: senderAddress, recipient: recipientAddress, documentId }
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to create charge');
+      setChargeId(data.id); // store chargeId for polling
+      setPaymentStatus('pending'); // set payment status to pending immediately after charge creation
+      // Timer is now handled by the effect that depends on chargeId and paymentStatus
+      return data.id; // chargeId
+    } catch (err: any) {
+      setPaymentStatus('error');
+      setPaymentError(err.message || 'Failed to create charge');
+      throw err;
+    }
+  }, [serviceFee, paymentCurrency, fileSizeTier, senderAddress, recipientAddress, documentId]);
+
+  const retryPayment = () => {
+    setShowPaymentDialog(true);
+    setPaymentStatus('idle');
+    setPaymentError(null);
+  };
+
+  const handlePostPaymentUpload = async () => {
+    if (uploading) return; // Prevent multiple uploads
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadProgress(0);
+    setUploadComplete(false);
+    let cipherArr: Uint8Array;
+    let metadata: FileMetadata;
+    try {
+      if (!file || !recipientAddress || !senderAddress) throw new Error('Missing file or addresses');
+      const buffer = await file.arrayBuffer();
+      // Use documentId as salt for key derivation
+      if (!documentId) throw new Error('Missing documentId for salt');
+      // Use HKDF-based encryption
+      const { ciphertext, iv } = await encryptFileBufferHKDF(buffer, senderAddress.toLowerCase(), recipientAddress.toLowerCase(), documentId);
+      // Compute SHA-256 hash of ciphertext (integrity check)
+      const hashBuffer = await crypto.subtle.digest('SHA-256', Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0)));
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const sha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      metadata = {
         name: file.name,
         type: file.type,
         size: file.size,
-        sender: address || "",
-        recipient: finalRecipientAddress,
+        sender: senderAddress.toLowerCase(),
+        recipient: recipientAddress.toLowerCase(),
         timestamp: Date.now(),
-        description: message || undefined
+        description: message || undefined,
+        iv,
+        sha256,
+        chargeId: chargeId || undefined,
+        documentId, // Store documentId for HKDF salt
       };
-      
-      // Upload to Arweave with automatic wallet generation
-      const arweaveId = await arweaveService.uploadFile(file, metadata, address);
-      
-      toast.success("Document sent successfully!");
-      
-      // Reset form
+      if (typeof ciphertext === 'string') {
+        try {
+          cipherArr = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+        } catch (e) {
+          console.error('[Upload Debug] Failed to convert base64 ciphertext to Uint8Array:', e, ciphertext);
+          throw new Error('Failed to convert ciphertext to Uint8Array');
+        }
+      } else {
+        console.error('[Upload Debug] Ciphertext is not a string:', ciphertext);
+        throw new Error('Invalid ciphertext type');
+      }
+
+      // Logging for debugging
+      console.log('[Upload Debug] cipherArr type:', Object.prototype.toString.call(cipherArr));
+      console.log('[Upload Debug] cipherArr length:', cipherArr?.length);
+      console.log('[Upload Debug] metadata:', metadata);
+      if (!(cipherArr instanceof Uint8Array)) {
+        throw new Error('cipherArr is not a Uint8Array');
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Upload failed');
+      setUploading(false);
+      toast.error('Upload failed: ' + (err.message || 'Unknown error'));
+      return;
+    }
+
+    // Show uploading toast and await confirmation
+    const toastId = toast.loading('Uploading file to Arweave and waiting for confirmation...');
+    try {
+      const arweaveTxId = await arweaveService.uploadFileToArweave(
+        cipherArr,
+        metadata,
+        (pct) => setUploadProgress(Math.round(pct))
+      );
+      setArweaveTxId(arweaveTxId);
+      setUploadComplete(true);
+      toast.success('File sent and stored on Arweave!', { id: toastId });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tuma:newSentFile', { detail: {
+          id: arweaveTxId,
+          metadata
+        }}));
+      }
       setFile(null);
       setRecipient("");
       setRecipientAddress("");
       setMessage("");
-      setPaymentAmount("0.01");
-      setCalculatedFee(null);
-      setCalculatedFeeWei(null);
-      setFileSizeTier(null);
-      setResolvedAddress(null);
-      setShowPaymentConfirmation(false);
-      setDocumentId("");
-    } catch (error) {
-      console.error("Error sending document:", error);
-      toast.error("Failed to send document");
+      // Don't close dialog immediately; let user see completion state
+      saveRecentRecipient({ name: recipient, address: recipientAddress });
+      setUploadProgress(null);
     } finally {
-      setSending(false);
+      setUploading(false);
     }
   };
 
-  const cancelSend = () => {
-    setShowPaymentConfirmation(false);
-    setDocumentId("");
-  };
+
 
   // State for recent recipients
-  const [recentRecipients, setRecentRecipients] = useState<RecipientInfo[]>([]);
+  const [recentRecipients, setRecentRecipients] = useState<{ name: string; address: string; lastSent?: number }[]>([]);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(false);
+
+  // --- Recent Recipients: Local Storage Logic ---
+  const RECENT_RECIPIENTS_KEY = 'recentRecipients';
+
+  function saveRecentRecipient(recipient: { name: string; address: string }) {
+    const existing: { name: string; address: string; lastSent?: number }[] = JSON.parse(localStorage.getItem(RECENT_RECIPIENTS_KEY) || '[]');
+    // Remove duplicates
+    const filtered = existing.filter((r) => r.address !== recipient.address);
+    const updated = [{ ...recipient, lastSent: Date.now() }, ...filtered].slice(0, 10); // Increased limit to 10
+    localStorage.setItem(RECENT_RECIPIENTS_KEY, JSON.stringify(updated));
+  }
+
+  function loadRecentRecipients(): { name: string; address: string; lastSent?: number }[] {
+    return JSON.parse(localStorage.getItem(RECENT_RECIPIENTS_KEY) || '[]');
+  }
 
   // Load recent recipients when component mounts or address changes
   useEffect(() => {
-    const loadRecentRecipients = async () => {
-      if (isConnected && address && contractService.isInitialized()) {
-        setIsLoadingRecipients(true);
-        try {
-          const recipients = await contractService.getRecentRecipients(address);
-          setRecentRecipients(recipients);
-        } catch (error) {
-          console.error('Error loading recent recipients:', error);
-        } finally {
-          setIsLoadingRecipients(false);
-        }
-      }
-    };
-
-    loadRecentRecipients();
-  }, [isConnected, address]);
+    if (!senderAddress) return;
+    
+    setIsLoadingRecipients(true);
+    
+    // First load from local storage
+    const localRecipients = loadRecentRecipients();
+    
+    // Then fetch sent files from Arweave to extract recipients
+    arweaveService.getSentFiles(senderAddress)
+      .then(files => {
+        // Extract unique recipients from sent files
+        const recipientsFromSentFiles = files.reduce((acc: { name: string; address: string; lastSent?: number }[], file) => {
+          const recipientAddress = file.metadata.recipient?.toLowerCase();
+          if (!recipientAddress) return acc;
+          
+          // Skip if we already have this recipient in our accumulator
+          if (acc.some(r => r.address.toLowerCase() === recipientAddress)) return acc;
+          
+          // Create a recipient entry
+          const recipientName = file.metadata.name ? `${file.metadata.name.split('_')[0]}` : 'Unknown';
+          return [...acc, {
+            name: recipientName,
+            address: recipientAddress,
+            lastSent: file.metadata.timestamp || Date.now()
+          }];
+        }, []);
+        
+        // Merge local and blockchain recipients, prioritizing local ones (as they have user-defined names)
+        const mergedRecipients = [...localRecipients];
+        
+        // Add blockchain recipients that aren't already in local storage
+        recipientsFromSentFiles.forEach(blockchainRecipient => {
+          if (!mergedRecipients.some(r => r.address.toLowerCase() === blockchainRecipient.address.toLowerCase())) {
+            mergedRecipients.push(blockchainRecipient);
+          }
+        });
+        
+        // Sort by most recent first
+        const sortedRecipients = mergedRecipients.sort((a, b) => 
+          (b.lastSent || 0) - (a.lastSent || 0)
+        );
+        
+        setRecentRecipients(sortedRecipients);
+      })
+      .catch(error => {
+        console.error('Error loading recipients from blockchain:', error);
+        // Fall back to local storage only
+        setRecentRecipients(localRecipients);
+      })
+      .finally(() => {
+        setIsLoadingRecipients(false);
+      });
+  }, [senderAddress]);
 
   // Format relative time (e.g., "2 days ago")
   const formatRelativeTime = (date: Date): string => {
@@ -269,9 +398,9 @@ const Send = () => {
       
       <main className="pt-28 px-6 pb-16 max-w-7xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Send Documents</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">Send Files</h1>
           <p className="text-doc-medium-gray">
-            Share documents securely with individuals or teams
+            Share files securely with individuals or teams
           </p>
         </div>
         
@@ -281,28 +410,25 @@ const Send = () => {
               <form onSubmit={handleSubmit}>
                 <div className="mb-8">
                   <label className="block text-sm font-medium mb-2">
-                    Select Document
+                    Select File
                   </label>
                   {!file ? (
-                    <div className="border-2 border-dashed border-doc-pale-gray dark:border-gray-600 rounded-lg p-8 text-center">
-                      <FileUp className="mx-auto h-12 w-12 text-doc-medium-gray mb-3" />
-                      <p className="text-doc-medium-gray mb-4">
-                        Drag and drop a file here, or click to select
+                    <label htmlFor="file" tabIndex={0}
+                      className="group transition-all duration-200 border-2 border-dashed border-doc-pale-gray dark:border-gray-600 rounded-xl p-12 text-center bg-white dark:bg-gray-800 hover:shadow-2xl hover:scale-103 hover:bg-blue-50/60 dark:hover:bg-blue-900/40 cursor-pointer ease-in-out flex flex-col items-center justify-center focus-within:shadow-2xl focus-within:scale-103"
+                    >
+                      <FileUp className="mx-auto h-14 w-14 text-doc-medium-gray mb-4 transition-all duration-200 group-hover:text-doc-deep-blue" />
+                      <p className="text-doc-medium-gray mb-6 text-lg font-medium group-hover:text-doc-deep-blue">
+                        Drag and drop a file, or click to select
                       </p>
                       <input
                         type="file"
-                        className="hidden"
-                        id="file-upload"
+                        id="file"
+                        accept="*/*"
                         onChange={handleFileChange}
+                        className="hidden"
+                        tabIndex={-1}
                       />
-                      <label
-                        htmlFor="file-upload"
-                        className="inline-flex items-center px-4 py-2 bg-doc-deep-blue text-white rounded-lg hover:bg-blue-600 transition-colors cursor-pointer"
-                      >
-                        <FileUp size={16} className="mr-2" />
-                        Select File
-                      </label>
-                    </div>
+                    </label>
                   ) : (
                     <div className="flex items-center p-4 bg-doc-soft-blue dark:bg-blue-900/30 rounded-lg animate-scale-in">
                       <div className="mr-4">
@@ -354,7 +480,7 @@ const Send = () => {
                       htmlFor="recipientAddress"
                       className="block text-sm font-medium mb-2"
                     >
-                      Recipient Wallet Address or ENS/Base Name
+                      Recipient Wallet Address
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -366,24 +492,14 @@ const Send = () => {
                       <input
                         type="text"
                         id="recipientAddress"
-                        placeholder="0x... or name.eth or name.base"
+                        placeholder="0x..."
                         className="pl-10 w-full bg-white dark:bg-gray-700 border-none rounded-lg focus:ring-1 focus:ring-blue-500 outline-none py-3 text-gray-800 dark:text-white"
                         value={recipientAddress}
                         onChange={(e) => setRecipientAddress(e.target.value)}
                       />
-                      {isResolvingName && (
-                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                          <div className="animate-spin h-4 w-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-                        </div>
-                      )}
                     </div>
-                    {resolvedAddress && (
-                      <p className="text-xs text-green-600 mt-1">
-                        Resolved to: {resolvedAddress.slice(0, 6)}...{resolvedAddress.slice(-4)}
-                      </p>
-                    )}
                     <p className="text-xs text-doc-medium-gray mt-1">
-                      Enter the recipient's Ethereum address, ENS name, or Base name
+                      Enter the recipient's Ethereum address
                     </p>
                   </div>
 
@@ -404,148 +520,31 @@ const Send = () => {
                   />
                 </div>
 
-                {!showPaymentConfirmation ? (
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={sending || !isConnected}
-                      className={`
-                        inline-flex items-center px-6 py-3 rounded-lg
-                        ${sending
-                          ? "bg-blue-400 cursor-not-allowed"
-                          : !isConnected
-                            ? "bg-gray-400 cursor-not-allowed"
-                            : "bg-doc-deep-blue hover:bg-blue-600"}
-                        text-white font-medium transition-colors
-                      `}
-                    >
-                      {sending ? (
-                        <>
-                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                          Preparing...
-                        </>
-                      ) : !isConnected ? (
-                        <>
-                          <AlertCircle size={18} className="mr-2" />
-                          Connect Wallet First
-                        </>
-                      ) : (
-                        <>
-                          <SendIcon size={18} className="mr-2" />
-                          Prepare to Send
-                        </>
-                      )}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h3 className="font-medium text-lg mb-3">Payment Confirmation</h3>
-                    <p className="text-doc-medium-gray mb-4">
-                      To send this document securely, a small payment is required to cover network fees.
-                    </p>
-                    
-                    <div className="mb-4">
-                      <label className="block text-sm font-medium mb-2">
-                        Payment Method
-                      </label>
-                      <div className="flex space-x-3 mb-4">
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod(PaymentCurrency.ETH)}
-                          className={`
-                            flex-1 py-2 px-4 rounded-lg flex items-center justify-center
-                            ${paymentMethod === PaymentCurrency.ETH
-                              ? "bg-doc-deep-blue text-white"
-                              : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white"}
-                            transition-colors
-                          `}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
-                            <path d="M11.767 19.089c4.924.868 6.14-6.025 1.216-6.894m-1.216 6.894L5.86 18.047m5.908 1.042-.347 1.97m1.563-8.864c4.924.869 6.14-6.025 1.215-6.893m-1.215 6.893-3.94-.694m5.155-6.2L8.29 4.26m5.908 1.042.348-1.97M7.48 20.364l3.126-17.727" />
-                          </svg>
-                          ETH
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentMethod(PaymentCurrency.USDC)}
-                          className={`
-                            flex-1 py-2 px-4 rounded-lg flex items-center justify-center
-                            ${paymentMethod === PaymentCurrency.USDC
-                              ? "bg-doc-deep-blue text-white"
-                              : "bg-white dark:bg-gray-700 text-gray-800 dark:text-white"}
-                            transition-colors
-                          `}
-                        >
-                          <Coins size={16} className="mr-2" />
-                          USDC
-                        </button>
-                      </div>
-                      
-                      <label className="block text-sm font-medium mb-2">
-                        {paymentMethod === PaymentCurrency.ETH ? "Payment Amount (ETH)" : "Payment Amount (USDC)"}
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        className="w-full bg-white dark:bg-gray-700 border-none rounded-lg focus:ring-1 focus:ring-blue-500 outline-none py-2 px-3 text-gray-800 dark:text-white"
-                      />
-                      {calculatedFee && fileSizeTier && (
-                        <div className="mt-2 text-sm">
-                          <p className="text-doc-medium-gray">
-                            Calculated fee: <span className="font-medium text-doc-deep-blue">
-                              {paymentMethod === PaymentCurrency.ETH 
-                                ? `${calculatedFee} ETH` 
-                                : `${calculatedFee} USDC`}
-                            </span>
-                          </p>
-                          <p className="text-doc-medium-gray">
-                            File size tier: <span className="font-medium text-doc-deep-blue">{fileSizeTier}</span>
-                          </p>
-                          <p className="text-xs text-doc-medium-gray mt-1">
-                            This fee covers both document storage and transaction costs
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={confirmPaymentAndSend}
-                        disabled={sending}
-                        className={`
-                          flex-1 inline-flex justify-center items-center px-4 py-2 rounded-lg
-                          ${sending
-                            ? "bg-blue-400 cursor-not-allowed"
-                            : "bg-doc-deep-blue hover:bg-blue-600"}
-                          text-white font-medium transition-colors
-                        `}
-                      >
-                        {sending ? (
-                          <>
-                            <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            <SendIcon size={16} className="mr-2" />
-                            Pay & Send
-                          </>
-                        )}
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={cancelSend}
-                        disabled={sending}
-                        className="flex-1 px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg font-medium transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={sending}
+                    className={`
+                      inline-flex items-center px-6 py-3 rounded-lg
+                      ${sending
+                        ? "bg-blue-400 cursor-not-allowed"
+                        : "bg-doc-deep-blue hover:bg-blue-600"}
+                      text-white font-medium transition-colors
+                    `}
+                  >
+                    {sending ? (
+                      <>
+                        <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                        Preparing...
+                      </>
+                    ) : (
+                      <>
+                        <SendIcon size={18} className="mr-2" />
+                        Send
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
             </div>
           </div>
@@ -581,14 +580,14 @@ const Send = () => {
                       </div>
                       <div className="text-xs text-doc-medium-gray flex items-center">
                         <Clock size={12} className="mr-1" />
-                        {formatRelativeTime(recipient.lastSent)}
+                        {formatRelativeTime(new Date(recipient.lastSent))}
                       </div>
                     </button>
                   ))
                 ) : (
                   <div className="py-6 text-center text-doc-medium-gray">
                     <p>No recent recipients found</p>
-                    <p className="text-xs mt-1">Recipients will appear here after you send documents</p>
+                    <p className="text-xs mt-1">Recipients will appear here after you send files</p>
                   </div>
                 )}
               </div>
@@ -607,11 +606,7 @@ const Send = () => {
                 </li>
                 <li className="flex">
                   <span className="text-doc-deep-blue mr-2">•</span>
-                  Recipients will receive an email notification
-                </li>
-                <li className="flex">
-                  <span className="text-doc-deep-blue mr-2">•</span>
-                  Documents exist forever, only pay once
+                  Files exist forever, only pay once
                 </li>
               </ul>
             </div>
@@ -631,15 +626,148 @@ const Send = () => {
                   <span className="text-doc-medium-gray">50MB to 100MB:</span>
                   <span className="font-medium">$3.00</span>
                 </li>
-                <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">100MB to 200MB:</span>
-                  <span className="font-medium">$5.00</span>
-                </li>
               </ul>
             </div>
           </div>
         </div>
       </main>
+      <Dialog
+        open={showPaymentDialog && !(uploadComplete && !uploading && !uploadError)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowPaymentDialog(false);
+            // Only clear/reset form if upload has started or completed
+            if (uploading || uploadComplete) {
+              setPaymentStatus('idle');
+              setPaymentError(null);
+              setFile(null);
+              setRecipient("");
+              setRecipientAddress("");
+              setMessage("");
+            }
+          }
+        }}
+      >
+        <DialogContent
+          className="relative flex flex-col items-center justify-center !top-1/2 !left-1/2 !-translate-x-1/2 !-translate-y-1/2 max-w-md w-full"
+          style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
+          onPointerDownOutside={uploading ? (e) => e.preventDefault() : undefined}
+          onEscapeKeyDown={uploading ? (e) => e.preventDefault() : undefined}
+        >
+          <DialogHeader className="flex flex-col items-center">
+            <DialogTitle className="text-center w-full">Service Fee Payment</DialogTitle>
+          </DialogHeader>
+          {uploading ? (
+            <div className="mb-4 text-blue-500 text-center">
+              You can close this dialog. You will be notified via the notification bell when your file upload is complete.
+            </div>
+          ) : (
+            <div className="mb-4 flex flex-col items-center">
+              <p className="text-doc-medium-gray mb-2 text-center">
+                To send this file securely, a service fee is required. The platform will cover Arweave storage costs.
+              </p>
+              <div className="mb-2 text-center">
+                <span className="font-medium">Service Fee:</span>
+                <span className="ml-2 text-doc-deep-blue">{serviceFee} USDC</span>
+              </div>
+              <div className="mb-2 text-center">
+                <span className="font-medium">File size tier:</span>
+                <span className="ml-2 text-doc-deep-blue">{fileSizeTier}</span>
+              </div>
+              <div className="text-xs text-doc-medium-gray mt-1 text-center">
+                Only the sender and recipient will be able to access and decrypt this file.
+              </div>
+            </div>
+          )}
+          {/* Uploading and upload complete states */}
+          {uploading && (
+            <div className="mt-4 flex flex-col items-center">
+              <div className="text-2xl font-bold text-gray-900 dark:text-white text-center mb-2">Encrypting & uploading...</div>
+              {/* Progress bar and percentage removed as per requirements */}
+            </div>
+          )}
+          {uploadComplete && !uploading && !uploadError && (
+            <div className="mt-6 flex flex-col items-center animate-fade-in">
+              <div className="mb-4">
+                <svg width="64" height="64" fill="none" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="32" fill="#22c55e" opacity="0.15"/>
+                  <circle cx="32" cy="32" r="24" fill="#22c55e"/>
+                  <path d="M22 34l8 8 12-14" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <div className="text-green-700 dark:text-green-400 text-lg font-semibold mb-2">Upload Complete!</div>
+              <div className="text-doc-medium-gray text-center mb-2">
+                Your file has been uploaded to Arweave.<br/>
+                <span className="text-blue-700 dark:text-blue-300 font-medium">It may take a few minutes to appear in your Sent tab as it is confirmed on the Arweave network.</span>
+              </div>
+              <button
+                className="mt-4 px-6 py-2 rounded bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                onClick={() => { setShowPaymentDialog(false); setUploadComplete(false); }}
+              >
+                Close
+              </button>
+            </div>
+          )}
+          {uploadError && <div className="mt-4 text-red-600">{uploadError}</div>}
+          {/* Payment section only if not uploading or upload complete */}
+          {!uploading && !uploadComplete && (
+            <>
+              {showPaymentDialog && (
+                <Checkout
+                  chargeHandler={chargeHandler}
+                  onStatus={async (status) => {
+                    const { statusName } = status;
+                    if (statusName === 'success') {
+                      setPaymentStatus('success');
+                      setPaymentError(null);
+                      setShowPaymentDialog(false);
+                      handlePostPaymentUpload();
+                    } else if (statusName === 'error') {
+                      setPaymentStatus('error');
+                      setPaymentError('Payment failed');
+                    } else if (statusName === 'pending') {
+                      setPaymentStatus('processing');
+                    } else if (statusName === 'init' || statusName === 'fetchingData' || statusName === 'ready') {
+                      setPaymentStatus('processing');
+                    }
+                  }}
+                >
+                  <CheckoutButton coinbaseBranded className="w-full py-3 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors mb-2" />
+                  <CheckoutStatus />
+                </Checkout>
+              )}
+              {paymentStatus === 'error' as typeof paymentStatus && (
+                <div className="text-red-600 flex flex-col">
+                  Payment failed: {paymentError}
+                  <button onClick={retryPayment} className="underline text-blue-600 mt-1">Retry Payment</button>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Upload Notification Bell */}
+      <UploadNotification visible={uploadComplete && !uploading && !uploadError} />
+    </div>
+  );
+};
+
+// --- Upload Notification Component ---
+import React from 'react';
+
+const UploadNotification = ({ visible }: { visible: boolean }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  if (!visible) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-[9999] flex items-center justify-center w-14 h-14 rounded-full bg-blue-600 text-white shadow-lg animate-fade-in cursor-pointer"
+      onClick={() => setShowTooltip((v) => !v)}
+      title="File upload complete">
+      <Bell size={28} />
+      {showTooltip && (
+        <div className="absolute bottom-16 right-0 bg-white text-blue-800 rounded shadow-lg px-4 py-2 text-sm font-semibold">
+          File upload complete!
+        </div>
+      )}
     </div>
   );
 };

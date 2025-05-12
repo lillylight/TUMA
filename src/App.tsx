@@ -1,22 +1,24 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "@/hooks/use-theme";
-import WalletConfigProvider, { useWallet } from "@/hooks/use-wallet";
+// import WalletConfigProvider from "@/hooks/use-wallet";
 import { useEffect } from "react";
-import { contractService } from "@/lib/contract-service";
 import Landing from "./pages/Landing";
 import Documents from "./pages/Documents";
 import Send from "./pages/Send";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+// import { OnchainKitProvider } from '@coinbase/onchainkit';
+// import { base } from 'wagmi/chains';
+import '@coinbase/onchainkit/styles.css';
+import AppRouteGuard from './AppRouteGuard';
 
 // Contract address on Base network
-const CONTRACT_ADDRESS = "0x4B5F5f6A21F65AB74d6C0B8fE0C6B3Fc70267e38"; // Deployed DocumentPayment contract on Base network
+const CONTRACT_ADDRESS = "0x4B5F5f6A21F65AB74d6C0B8fE0C6B3Fc70267e38";
 
 const queryClient = new QueryClient();
 
@@ -26,26 +28,10 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ element }: ProtectedRouteProps) => {
-  const { isConnected } = useWallet();
-  
-  if (!isConnected) {
-    return <Navigate to="/landing" replace />;
-  }
-  
   return <>{element}</>;
 };
 
 const AppContent = () => {
-  const { isConnected, address } = useWallet();
-  
-  // Initialize contract service when wallet is connected
-  useEffect(() => {
-    if (isConnected && address) {
-      contractService.initialize(CONTRACT_ADDRESS)
-        .catch(error => console.error("Failed to initialize contract service:", error));
-    }
-  }, [isConnected, address]);
-  
   // Detect initial theme preference
   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const savedTheme = localStorage.getItem("tuma-ui-theme");
@@ -56,31 +42,33 @@ const AppContent = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ProtectedRoute element={<Send />} />} />
-            <Route path="/landing" element={<Landing />} />
-            <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
-            <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
-            <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
-            <Route path="/about" element={<About />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AppRouteGuard>
+              <Routes>
+                <Route path="/" element={<Navigate to="/landing" replace />} />
+                <Route path="/landing" element={<Landing />} />
+                <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
+                <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
+                <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+                <Route path="/about" element={<About />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AppRouteGuard>
+          </BrowserRouter>
+        </QueryClientProvider>
       </TooltipProvider>
     </ThemeProvider>
   );
 };
 
-const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <WalletConfigProvider>
-        <AppContent />
-      </WalletConfigProvider>
-    </QueryClientProvider>
-  );
-};
+import { AppProviders } from './AppProviders';
 
-export default App;
+export default function App() {
+  return (
+    <AppProviders>
+      <AppContent />
+    </AppProviders>
+  );
+}

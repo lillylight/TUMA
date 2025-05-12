@@ -46,42 +46,42 @@
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 10%; /* #191919 */
+    --foreground: 0 0% 100%; /* #fff */
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 16%; /* #2a2a2a */
+    --card-foreground: 0 0% 100%; /* #fff */
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 16%; /* #2a2a2a */
+    --popover-foreground: 0 0% 100%; /* #fff */
 
-    --primary: 210 100% 50%;
-    --primary-foreground: 222 47% 11%;
+    --primary: 210 100% 50%; /* blue accent */
+    --primary-foreground: 0 0% 100%; /* #fff */
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 16%; /* #2a2a2a */
+    --secondary-foreground: 0 0% 100%; /* #fff */
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 0 0% 16%; /* #2a2a2a */
+    --muted-foreground: 0 0% 100%; /* #fff */
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 16%; /* #2a2a2a */
+    --accent-foreground: 0 0% 100%; /* #fff */
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%; /* #fff */
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    --border: 0 0% 16%; /* #2a2a2a */
+    --input: 0 0% 16%; /* #2a2a2a */
     --ring: 213 27% 84%;
     
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 16%; /* #2a2a2a */
+    --sidebar-foreground: 0 0% 100%; /* #fff */
+    --sidebar-primary: 210 100% 50%; /* blue accent */
+    --sidebar-primary-foreground: 0 0% 100%; /* #fff */
+    --sidebar-accent: 0 0% 16%; /* #2a2a2a */
+    --sidebar-accent-foreground: 0 0% 100%; /* #fff */
+    --sidebar-border: 0 0% 16%; /* #2a2a2a */
+    --sidebar-ring: 210 100% 50%; /* blue accent */
   }
 }
 
@@ -96,6 +96,76 @@
 }
 
 @layer components {
+
+/* Force dark mode backgrounds and input styling for all app pages except landing */
+.dark .bg-white, .dark .bg-blue-50, .dark .bg-blue-100, .dark .bg-blue-900, .dark .bg-gray-900, .dark .bg-gray-800, .dark .bg-gray-100, .dark .bg-gradient-to-b, .dark .bg-gradient-to-t, .dark .bg-gradient-to-r, .dark .bg-gradient-to-l, .dark .glass-panel, .dark .card-hover, .dark .page-transition, .dark .TabsContent, .dark .TabsList, .dark .TabsTrigger, .dark .DialogContent, .dark .DialogHeader, .dark .DialogFooter, .dark .DialogTitle, .dark .PopoverContent, .dark .PopoverHeader, .dark .PopoverFooter, .dark .PopoverTitle, .dark .sidebar, .dark .main, .dark .container, .dark .profile-section, .dark .documents-section, .dark .send-section, .dark .notfound-section, .dark .about-section, .dark .dashboard-section, .dark .statcard, .dark .file-list, .dark .file-row, .dark .input, .dark input, .dark textarea, .dark select, .dark .search-bar, .dark .search-input, .dark .search-box, .dark .search-field, .dark .form-input, .dark .form-control, .dark .form-group, .dark .dropdown-menu, .dark .dropdown-content, .dark .dropdown-item, .dark .dropdown, .dark .table, .dark .table-row, .dark .table-cell, .dark .table-header, .dark .table-footer, .dark .table-title, .dark .table-content, .dark .tab, .dark .tab-content, .dark .tab-header, .dark .tab-footer, .dark .tab-title, .dark .tab-list, .dark .tab-trigger, .dark .tab-panel, .dark .tab-section, .dark .tab-group, .dark .tab-container, .dark .tab-main, .dark .tab-sidebar, .dark .tab-profile, .dark .tab-documents, .dark .tab-send, .dark .tab-notfound, .dark .tab-about, .dark .tab-dashboard, .dark .tab-statcard, .dark .tab-file-list, .dark .tab-file-row, .dark .tab-input, .dark .tab-search-bar, .dark .tab-search-input, .dark .tab-search-box, .dark .tab-search-field, .dark .tab-form-input, .dark .tab-form-control, .dark .tab-form-group, .dark .tab-dropdown-menu, .dark .tab-dropdown-content, .dark .tab-dropdown-item, .dark .tab-dropdown, .dark .tab-table, .dark .tab-table-row, .dark .tab-table-cell, .dark .tab-table-header, .dark .tab-table-footer, .dark .tab-table-title, .dark .tab-table-content, .dark .tab-sidebar, .dark .tab-main, .dark .tab-container, .dark .tab-profile-section, .dark .tab-documents-section, .dark .tab-send-section, .dark .tab-notfound-section, .dark .tab-about-section, .dark .tab-dashboard-section, .dark .tab-statcard, .dark .tab-file-list, .dark .tab-file-row, .dark .tab-input, .dark .tab-search-bar, .dark .tab-search-input, .dark .tab-search-box, .dark .tab-search-field, .dark .tab-form-input, .dark .form-input, .dark input, .dark textarea, .dark select {
+    background: hsl(0 0% 10%) !important;
+    color: #fff !important;
+    border-color: hsl(0 0% 16%) !important;
+}
+
+/* Header background for dark mode (non-landing) */
+.dark .header, .dark .bg-header, .dark .header-bg, .dark .navbar, .dark .main-header {
+    background: hsl(0 0% 14%) !important; /* #232323 */
+    color: #fff !important;
+    border-color: hsl(0 0% 16%) !important;
+}
+
+/* Profile/stat/section badges and counters in dark mode */
+.dark .badge, .dark .stat-counter, .dark .tab-counter, .dark .profile-counter, .dark .tab-badge, .dark .badge-light, .dark .stat-badge, .dark .counter, .dark .rounded-full, .dark .profile-badge, .dark .tab-badge, .dark .tab-badge-light {
+    background: hsl(0 0% 16%) !important; /* #2a2a2a */
+    color: #fff !important;
+    border-color: hsl(0 0% 16%) !important;
+}
+
+.dark input,
+.dark textarea,
+.dark select {
+    background: #191919 !important;
+    color: #fff !important;
+    border-color: #2a2a2a !important;
+}
+
+/* Send page: specifically style input fields for dark mode */
+.dark .glass-panel input,
+.dark .glass-panel textarea,
+.dark .glass-panel select {
+    background: #191919 !important;
+    color: #fff !important;
+    border: 2px solid #2a2a2a !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+}
+
+/* Send page: style recent recipients panel and buttons for dark mode */
+.dark .glass-panel .space-y-3 > button {
+    background: #191919 !important;
+    color: #fff !important;
+    border: 1px solid #2a2a2a !important;
+}
+.dark .glass-panel .space-y-3 > button:hover {
+    background: #232323 !important;
+    color: #fff !important;
+}
+.dark .glass-panel .w-8.h-8.rounded-full {
+    background: #2563eb !important; /* blue-600 */
+    color: #fff !important;
+}
+
+/* Remove any unwanted box-shadow or glow from Send page buttons */
+.dark .glass-panel button,
+.dark .glass-panel .button,
+.dark .glass-panel .btn {
+    box-shadow: none !important;
+}
+
+/* Ensure placeholder text is readable in dark mode */
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #bdbdbd !important;
+    opacity: 1 !important;
+}
+
   .glass-panel {
     @apply bg-white bg-opacity-70 backdrop-blur-lg border border-white border-opacity-20 rounded-xl shadow-glass dark:bg-gray-900 dark:bg-opacity-60 dark:border-gray-800 dark:border-opacity-30;
   }
@@ -156,6 +226,135 @@
 
 .dark ::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Wallet info section - make it gray in dark mode */
+.dark .wallet-info-section,
+.dark [class*="wallet-info"] {
+  background-color: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 24%) !important;
+  color: #fff !important;
+}
+
+/* Wallet buttons - make them gray in dark mode */
+.dark .wallet-info-section button,
+.dark [class*="wallet-info"] button,
+.dark button:has(svg[data-lucide="Wallet"]),
+.dark a:has(svg[data-lucide="Wallet"]),
+.dark button:has(.wallet-icon),
+.dark a:has(.wallet-icon),
+.dark [role="button"]:has(svg[data-lucide="Wallet"]) {
+  background-color: hsl(0 0% 24%) !important;
+  border-color: hsl(0 0% 28%) !important;
+  color: #fff !important;
+}
+
+/* Fund wallet buttons - make them gray in dark mode */
+.dark .fund-wallet-button,
+.dark button.bg-primary,
+.dark a.bg-primary,
+.dark [role="button"].bg-primary,
+.dark button:where([class*="fund"]),
+.dark a:where([class*="fund"]),
+.dark [role="button"]:where([class*="fund"]),
+.dark .w-full,
+
+/* Target all blue buttons in dark mode */
+.dark .wallet-info-section .bg-blue-500,
+.dark .wallet-info-section .bg-blue-600,
+.dark .wallet-info-section .bg-blue-700,
+.dark .wallet-info-section .bg-blue-800,
+.dark .wallet-info-section .bg-blue-900,
+.dark .wallet-info-section .bg-primary {
+  background-color: hsl(0 0% 24%) !important;
+  border-color: hsl(0 0% 28%) !important;
+  color: #fff !important;
+}
+
+/* Direct FundCard styling for dark mode */
+.dark .custom-fund-card-container * {
+  background-color: hsl(0 0% 16%) !important;
+  color: #fff !important;
+  border-color: hsl(0 0% 24%) !important;
+}
+
+.dark .custom-fund-card-container input,
+.dark .custom-fund-card-container button {
+  background-color: hsl(0 0% 20%) !important;
+  color: #fff !important;
+  border: 1px solid hsl(0 0% 24%) !important;
+}
+
+.dark .custom-fund-card-container button:hover {
+  background-color: hsl(0 0% 24%) !important;
+}
+
+/* Override specific elements */
+.dark .custom-fund-card-container [class*="Card"],
+.dark .custom-fund-card-container [class*="card"],
+.dark .custom-fund-card-container [class*="Container"],
+.dark .custom-fund-card-container [class*="container"],
+.dark .custom-fund-card-container [class*="Wrapper"],
+.dark .custom-fund-card-container [class*="wrapper"] {
+  background-color: hsl(0 0% 16%) !important;
+  border-color: hsl(0 0% 20%) !important;
+  color: #fff !important;
+}
+
+.dark [data-onchainkit-fund-card] input,
+.dark [data-onchainkit-fund-card] button {
+  background-color: hsl(0 0% 20%) !important;
+  border-color: hsl(0 0% 24%) !important;
+  color: #fff !important;
+}
+
+.dark [data-onchainkit-fund-card] button:hover {
+  background-color: hsl(0 0% 24%) !important;
+}
+
+.dark [data-onchainkit-fund-card] h1,
+.dark [data-onchainkit-fund-card] h2,
+.dark [data-onchainkit-fund-card] h3,
+.dark [data-onchainkit-fund-card] h4,
+.dark [data-onchainkit-fund-card] p,
+.dark [data-onchainkit-fund-card] span {
+  color: #fff !important;
+}
+
+/* Dashboard elements - dark mode fixes for purple-circled elements */
+.dark .storage-usage-section,
+.dark .wallet-info-section,
+.dark .profile-section,
+.dark .documents-section,
+.dark .account-settings-section {
+  background-color: hsl(0 0% 16%) !important;
+  border-color: hsl(0 0% 20%) !important;
+}
+
+/* Storage usage progress bar - make it gray in dark mode */
+.dark .storage-usage-bar,
+.dark .Progress,
+.dark [role="progressbar"] {
+  background-color: hsl(0 0% 20%) !important;
+}
+
+.dark .ProgressIndicator,
+.dark .Progress > div,
+.dark [role="progressbar"] > div {
+  background-color: hsl(0 0% 24%) !important;
+}
+
+.dark .storage-usage-progress,
+.dark .wallet-balance-display,
+.dark .document-count,
+.dark .profile-stats {
+  color: white !important;
+}
+
+/* Header styling to match toggle area color */
+.dark header,
+.dark .header-nav {
+  background-color: hsl(0 0% 14%) !important;
 }
 
 /* Page transition styles */

@@ -1,6 +1,7 @@
 import Arweave from 'arweave';
 import { toast } from 'sonner';
-import { ethers } from 'ethers';
+import { deriveSymmetricKeyHKDF } from './encryption';
+import type { JWKInterface } from 'arweave/web/lib/wallet';
 
 // Initialize Arweave
 const arweave = Arweave.init({
@@ -10,8 +11,8 @@ const arweave = Arweave.init({
   timeout: 20000,
 });
 
-// Local storage key for Arweave wallet
-const ARWEAVE_WALLET_KEY = 'tuma-arweave-wallet';
+// JWK file path from .env or config
+const ARWEAVE_OWNER_JWK_PATH = import.meta.env.VITE_ARWEAVE_JWK_PATH || 'C:/Users/lisel/Downloads/3M15GHxKnXYtVEZQo5HF1KrUvRA4GYLNZmEUWX57rj0.json';
 
 export interface FileMetadata {
   name: string;
@@ -21,6 +22,10 @@ export interface FileMetadata {
   recipient: string;
   timestamp: number;
   description?: string;
+  iv?: string; // Add IV for decryption
+  sha256?: string; // Add SHA-256 hash for integrity verification
+  chargeId?: string; // Add chargeId for payment gating
+  documentId?: string; // Add documentId for HKDF salt
 }
 
 export interface StoredFile {
@@ -29,324 +34,351 @@ export interface StoredFile {
 }
 
 class ArweaveService {
-  private wallet: any = null;
+  private ownerWallet: JWKInterface | null = null; // Only the app owner's JWK
 
   constructor() {
-    // Try to load wallet from local storage on initialization
-    this.loadWalletFromStorage();
+    this.loadOwnerWallet();
   }
 
   /**
-   * Load wallet from local storage if available
+   * Load the app owner's Arweave wallet from the configured JWK path
+   * Robust: tries both public and local dev path, logs errors
    */
-  private loadWalletFromStorage(): void {
+  async loadOwnerWallet(): Promise<void> {
     try {
-      const encryptedWallet = localStorage.getItem(ARWEAVE_WALLET_KEY);
-      if (encryptedWallet) {
-        // In a real app, we would decrypt this with a key derived from the user's Ethereum wallet
-        // For simplicity, we're just parsing it directly here
-        this.wallet = JSON.parse(encryptedWallet);
-        console.log('Arweave wallet loaded from storage');
+      // Try public directory first (Vite/Next will serve this for dev)
+      let res = await fetch('/arweave-jwk.json');
+      if (!res.ok) {
+        // Try fallback to env path if not found
+        res = await fetch(ARWEAVE_OWNER_JWK_PATH);
       }
+      const jwk: JWKInterface = await res.json();
+      this.ownerWallet = jwk;
+      console.log('Loaded Arweave owner wallet');
     } catch (error) {
-      console.error('Error loading Arweave wallet from storage:', error);
-      // Silently fail - we'll generate a new wallet when needed
+      console.error('Error loading Arweave owner wallet:', error);
+      toast.error('Failed to load Arweave wallet. Please ensure arweave-jwk.json is present in /public and accessible.');
+      this.ownerWallet = null;
     }
   }
 
   /**
-   * Save wallet to local storage
-   */
-  private saveWalletToStorage(): void {
-    try {
-      if (this.wallet) {
-        // In a real app, we would encrypt this with a key derived from the user's Ethereum wallet
-        // For simplicity, we're just stringifying it directly here
-        localStorage.setItem(ARWEAVE_WALLET_KEY, JSON.stringify(this.wallet));
-      }
-    } catch (error) {
-      console.error('Error saving Arweave wallet to storage:', error);
-      // Silently fail - not critical
-    }
-  }
-
-  /**
-   * Set the wallet key for Arweave transactions
-   * @param jwk The JWK wallet object
-   */
-  setWallet(jwk: any) {
-    this.wallet = jwk;
-    this.saveWalletToStorage();
-  }
-
-  /**
-   * Check if wallet is connected
-   */
-  isWalletConnected(): boolean {
-    return this.wallet !== null;
-  }
-
-  /**
-   * Generate a new wallet key
-   * @param ethAddress Optional Ethereum address to derive the wallet from
-   * @returns The JWK wallet object
-   */
-  async generateWallet(ethAddress?: string) {
-    try {
-      let key;
-      
-      if (ethAddress) {
-        // Derive a deterministic key from the Ethereum address
-        // This is a simplified example - in a real app, you would use a more secure method
-        const seed = ethers.id(ethAddress + '-arweave-key');
-        // Use the seed to generate a deterministic key
-        // For simplicity, we're just using a random key here
-        key = await arweave.wallets.generate();
-      } else {
-        // Generate a random key if no Ethereum address is provided
-        key = await arweave.wallets.generate();
-      }
-      
-      this.wallet = key;
-      this.saveWalletToStorage();
-      return key;
-    } catch (error) {
-      console.error('Error generating wallet:', error);
-      // Don't show error to user - silent failure
-      throw error;
-    }
-  }
-
-  /**
-   * Ensure wallet is available, generating one if needed
-   * @param ethAddress Optional Ethereum address to derive the wallet from
-   */
-  async ensureWallet(ethAddress?: string): Promise<void> {
-    if (!this.isWalletConnected()) {
-      await this.generateWallet(ethAddress);
-    }
-  }
-
-  /**
-   * Upload a file to Arweave
-   * @param file The file to upload
+   * Upload a file to Arweave using the app owner's wallet (CHUNKED, with progress)
+   * @param file The encrypted file data (Uint8Array)
    * @param metadata File metadata
-   * @param ethAddress Optional Ethereum address to derive the wallet from
+   * @param onProgress Optional callback for upload progress (0-100)
    * @returns The transaction ID
    */
-  async uploadFile(file: File, metadata: FileMetadata, ethAddress?: string): Promise<string> {
-    // Ensure wallet is available
-    await this.ensureWallet(ethAddress);
-
+  async uploadFileToArweave(file: Uint8Array, metadata: FileMetadata, onProgress?: (pct: number) => void): Promise<string> {
+    if (!this.ownerWallet) {
+      await this.loadOwnerWallet();
+      if (!this.ownerWallet) throw new Error('Arweave wallet not loaded');
+    }
+    let transaction;
     try {
-      // Read file as array buffer
-      const fileBuffer = await file.arrayBuffer();
-      const fileData = new Uint8Array(fileBuffer);
-
-      // Create transaction
-      const transaction = await arweave.createTransaction({ data: fileData }, this.wallet);
-
-      // Add tags for metadata
-      transaction.addTag('Content-Type', file.type);
+      transaction = await arweave.createTransaction({ data: file }, this.ownerWallet!);
+      transaction.addTag('Content-Type', metadata.type);
       transaction.addTag('App-Name', 'TUMA-Document-Exchange');
       transaction.addTag('Document-Name', metadata.name);
       transaction.addTag('Document-Type', metadata.type);
       transaction.addTag('Document-Size', metadata.size.toString());
-      transaction.addTag('Sender', metadata.sender);
-      transaction.addTag('Recipient', metadata.recipient);
+      transaction.addTag('Sender', metadata.sender.toLowerCase());
+      transaction.addTag('Recipient', metadata.recipient.toLowerCase());
       transaction.addTag('Timestamp', metadata.timestamp.toString());
-      
-      if (metadata.description) {
-        transaction.addTag('Description', metadata.description);
+      if (metadata.description) transaction.addTag('Description', metadata.description);
+      if (metadata.iv) transaction.addTag('IV', metadata.iv);
+      if (metadata.sha256) transaction.addTag('sha256', metadata.sha256); // Always add sha256 tag for integrity
+      if (metadata.documentId) transaction.addTag('Document-Id', metadata.documentId); // Add documentId tag
+
+      await arweave.transactions.sign(transaction, this.ownerWallet!);
+
+      // Use chunked uploader for reliability and progress
+      const uploader = await arweave.transactions.getUploader(transaction);
+      let lastPct = 0;
+      let chunkIndex = 0;
+      while (!uploader.isComplete) {
+        await uploader.uploadChunk();
+        chunkIndex++;
+        // Log detailed uploader status for debugging
+        console.log('[Arweave Upload]', {
+          pctComplete: uploader.pctComplete,
+          lastResponseStatus: uploader.lastResponseStatus,
+          totalChunks: uploader.totalChunks,
+          uploadedChunks: chunkIndex,
+          isComplete: uploader.isComplete
+        });
+        if (onProgress) onProgress(uploader.pctComplete);
+        lastPct = uploader.pctComplete;
+      }
+      // Ensure uploader really finished
+      if (!uploader.isComplete) {
+        throw new Error('Uploader did not complete all chunks!');
+      }
+      // Wait for confirmation (now 5 minutes)
+      try {
+        await this.waitForConfirmation(transaction.id, 300000, 5000);
+      } catch (err) {
+        // Show a warning but do not treat as hard error
+        console.warn('Arweave transaction not confirmed in time, but upload likely succeeded:', transaction.id);
+        toast.warning(
+          `Upload submitted but not yet confirmed. You can check status here: https://arweave.net/${transaction.id}`
+        );
+        // Still return txId so user can check status
       }
 
-      // Sign transaction
-      await arweave.transactions.sign(transaction, this.wallet);
-
-      // Submit transaction
-      const response = await arweave.transactions.post(transaction);
-      
-      if (response.status === 200 || response.status === 202) {
-        return transaction.id;
-      } else {
-        throw new Error(`Transaction failed with status ${response.status}`);
-      }
+      return transaction.id;
     } catch (error) {
       console.error('Error uploading document:', error);
-      toast.error('Failed to upload document to Arweave');
-      throw error;
+      if (transaction && transaction.id) {
+        toast.error(
+          `Failed to confirm upload, but transaction was submitted. Check status: https://arweave.net/${transaction.id}`
+        );
+        return transaction.id;
+      } else {
+        toast.error('Failed to upload document to Arweave');
+        throw error;
+      }
     }
   }
 
   /**
-   * Get a file from Arweave
-   * @param id The transaction ID
-   * @returns The file data and metadata
+   * Wait for Arweave transaction confirmation (polls until confirmed or timeout)
+   */
+  async waitForConfirmation(txId: string, timeoutMs = 60000, pollInterval = 5000): Promise<void> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      try {
+        const status = await arweave.transactions.getStatus(txId);
+        if (status.status === 200 && status.confirmed) return;
+      } catch (e) {}
+      await new Promise(res => setTimeout(res, pollInterval));
+    }
+    throw new Error('Arweave transaction not confirmed in time');
+  }
+
+  /**
+   * Fetch a file and metadata from Arweave by transaction ID
+   * With improved error handling and fallback mechanisms
    */
   async getFile(id: string): Promise<{ data: Uint8Array; metadata: FileMetadata }> {
     try {
-      // Get transaction data
-      const data = await arweave.transactions.getData(id, { decode: true }) as Uint8Array;
+      // Try multiple gateways if the primary one fails
+      const gateways = [
+        'arweave.net',
+        'g8way.io',
+        'arweave.dev'
+      ];
       
-      // Get transaction tags
-      const tags = await this.getTransactionTags(id);
+      let lastError: Error | null = null;
+      let tx;
+      let dataRaw;
       
-      // Extract metadata from tags
+      // Try each gateway until one works
+      for (const gateway of gateways) {
+        try {
+          // Configure arweave for this gateway
+          const gatewayArweave = Arweave.init({
+            host: gateway,
+            port: 443,
+            protocol: 'https',
+            timeout: 30000, // Increased timeout
+          });
+          
+          // Try to get the transaction
+          tx = await gatewayArweave.transactions.get(id);
+          
+          // If we got the transaction, try to get the data
+          try {
+            dataRaw = await gatewayArweave.transactions.getData(id, { decode: true });
+            if (dataRaw) {
+              // We successfully got both tx and data, break out of the gateway loop
+              break;
+            }
+          } catch (dataError) {
+            console.warn(`Failed to get data from ${gateway} for ${id}:`, dataError);
+            lastError = dataError instanceof Error ? dataError : new Error(String(dataError));
+          }
+        } catch (txError) {
+          console.warn(`Failed to get transaction from ${gateway} for ${id}:`, txError);
+          lastError = txError instanceof Error ? txError : new Error(String(txError));
+        }
+      }
+      
+      // If we couldn't get the transaction or data from any gateway
+      if (!tx || !dataRaw) {
+        throw lastError || new Error('Failed to retrieve file from all gateways');
+      }
+      
+      // Process the data
+      let data: Uint8Array;
+      if (typeof dataRaw === 'string') {
+        // Convert string to Uint8Array
+        data = new TextEncoder().encode(dataRaw);
+      } else if (dataRaw instanceof Uint8Array) {
+        data = dataRaw;
+      } else if (typeof ArrayBuffer !== 'undefined' && dataRaw instanceof ArrayBuffer) {
+        data = new Uint8Array(dataRaw);
+      } else {
+        throw new Error('Unsupported data type received from Arweave');
+      }
+      
+      // Parse tags for metadata
+      let tags: Record<string, string> = {};
+      if (typeof tx.get === 'function') {
+        // Arweave-js v2+ (transaction.get('tags'))
+        const tagArr = tx.get('tags');
+        if (Array.isArray(tagArr)) {
+          tagArr.forEach((tag: any) => {
+            const key = tag.get('name', { decode: true, string: true });
+            const value = tag.get('value', { decode: true, string: true });
+            tags[key] = value;
+          });
+        }
+      } else if (Array.isArray((tx as any).tags)) {
+        // Arweave-js v1 (transaction.tags)
+        (tx as any).tags.forEach((tag: any) => {
+          const key = tag.name ? arweave.utils.bufferToString(tag.name) : '';
+          const value = tag.value ? arweave.utils.bufferToString(tag.value) : '';
+          tags[key] = value;
+        });
+      }
+      
       const metadata: FileMetadata = {
-        name: tags['Document-Name'] || 'Unknown',
-        type: tags['Document-Type'] || 'Unknown',
-        size: parseInt(tags['Document-Size'] || '0'),
-        sender: tags['Sender'] || 'Unknown',
-        recipient: tags['Recipient'] || 'Unknown',
-        timestamp: parseInt(tags['Timestamp'] || Date.now().toString()),
+        name: tags['Document-Name'] || '',
+        type: tags['Document-Type'] || '',
+        size: Number(tags['Document-Size']) || 0,
+        sender: tags['Sender'] || '',
+        recipient: tags['Recipient'] || '',
+        timestamp: Number(tags['Timestamp']) || 0,
         description: tags['Description'],
+        iv: tags['IV'],
+        sha256: tags['sha256'] || tags['SHA256'] || undefined,
+        documentId: tags['Document-Id'] || undefined,
       };
 
       return { data, metadata };
     } catch (error) {
-      console.error('Error getting document:', error);
-      toast.error('Failed to retrieve document from Arweave');
+      console.error('Error fetching file from Arweave:', error);
+      toast.error('Failed to retrieve file. Please try again later.');
       throw error;
     }
   }
 
   /**
-   * Get transaction tags
-   * @param id The transaction ID
-   * @returns Object with tag names and values
-   */
-  private async getTransactionTags(id: string): Promise<Record<string, string>> {
-    const transaction = await arweave.transactions.get(id);
-    const tags: Record<string, string> = {};
-
-    if (transaction.tags) {
-      transaction.tags.forEach((tag: any) => {
-        const key = tag.get('name', { decode: true, string: true });
-        const value = tag.get('value', { decode: true, string: true });
-        tags[key] = value;
-      });
-    }
-
-    return tags;
-  }
-
-  /**
-   * Get files sent by a specific address
-   * @param address The sender's address
-   * @returns Array of file IDs and metadata
-   */
-  async getSentFiles(address: string): Promise<StoredFile[]> {
-    try {
-      const query = `{
-        transactions(
-          tags: [
-            { name: "App-Name", values: ["TUMA-Document-Exchange"] },
-            { name: "Sender", values: ["${address}"] }
-          ]
-        ) {
-          edges {
-            node {
-              id
-              tags {
-                name
-                value
-              }
-            }
-          }
-        }
-      }`;
-
-      const response = await fetch('https://arweave.net/graphql', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
-      });
-
-      const result = await response.json();
-      return this.parseGraphQLResponse(result);
-    } catch (error) {
-      console.error('Error getting sent documents:', error);
-      toast.error('Failed to retrieve sent documents');
-      throw error;
-    }
-  }
-
-  /**
-   * Get files received by a specific address
-   * @param address The recipient's address
-   * @returns Array of file IDs and metadata
+   * Get all received files for a user address
+   * Uses Arweave GraphQL to find transactions where Recipient == address
    */
   async getReceivedFiles(address: string): Promise<StoredFile[]> {
+    if (!address) return [];
     try {
-      const query = `{
-        transactions(
-          tags: [
-            { name: "App-Name", values: ["TUMA-Document-Exchange"] },
-            { name: "Recipient", values: ["${address}"] }
-          ]
-        ) {
-          edges {
-            node {
-              id
-              tags {
-                name
-                value
+      const query = {
+        query: `{
+          transactions(
+            tags: [
+              { name: "App-Name", values: ["TUMA-Document-Exchange"] },
+              { name: "Recipient", values: ["${address.toLowerCase()}"] }
+            ]
+            first: 100
+          ) {
+            edges {
+              node {
+                id
+                tags {
+                  name
+                  value
+                }
               }
             }
           }
-        }
-      }`;
-
-      const response = await fetch('https://arweave.net/graphql', {
+        }`
+      };
+      const res = await fetch('https://arweave.net/graphql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify(query)
       });
-
-      const result = await response.json();
-      return this.parseGraphQLResponse(result);
+      const json = await res.json();
+      const edges = json.data.transactions.edges;
+      return edges.map((edge: any) => {
+        const tags: Record<string, string> = {};
+        edge.node.tags.forEach((tag: any) => { tags[tag.name] = tag.value; });
+        const metadata: FileMetadata = {
+          name: tags['Document-Name'] || '',
+          type: tags['Document-Type'] || '',
+          size: Number(tags['Document-Size']) || 0,
+          sender: tags['Sender'] || '',
+          recipient: tags['Recipient'] || '',
+          timestamp: Number(tags['Timestamp']) || 0,
+          description: tags['Description'],
+          iv: tags['IV'],
+          sha256: tags['sha256'] || tags['SHA256'] || undefined,
+        };
+        return { id: edge.node.id, metadata };
+      });
     } catch (error) {
-      console.error('Error getting received documents:', error);
-      toast.error('Failed to retrieve received documents');
-      throw error;
+      console.error('Error fetching received files from Arweave:', error);
+      toast.error('Failed to fetch received files');
+      return [];
     }
   }
 
   /**
-   * Parse GraphQL response to extract file metadata
-   * @param response The GraphQL response
-   * @returns Array of file IDs and metadata
+   * Get all sent files for a user address
+   * Uses Arweave GraphQL to find transactions where Sender == address
    */
-  private parseGraphQLResponse(response: any): StoredFile[] {
-    const files: StoredFile[] = [];
-
-    if (response.data && response.data.transactions && response.data.transactions.edges) {
-      response.data.transactions.edges.forEach((edge: any) => {
-        const node = edge.node;
-        const id = node.id;
-        const tags: Record<string, string> = {};
-
-        node.tags.forEach((tag: any) => {
-          tags[tag.name] = tag.value;
-        });
-
-        const metadata: FileMetadata = {
-          name: tags['Document-Name'] || 'Unknown',
-          type: tags['Document-Type'] || 'Unknown',
-          size: parseInt(tags['Document-Size'] || '0'),
-          sender: tags['Sender'] || 'Unknown',
-          recipient: tags['Recipient'] || 'Unknown',
-          timestamp: parseInt(tags['Timestamp'] || Date.now().toString()),
-          description: tags['Description'],
-        };
-
-        files.push({ id, metadata });
+  async getSentFiles(address: string): Promise<StoredFile[]> {
+    if (!address) return [];
+    try {
+      const query = {
+        query: `{
+          transactions(
+            tags: [
+              { name: "App-Name", values: ["TUMA-Document-Exchange"] },
+              { name: "Sender", values: ["${address.toLowerCase()}"] }
+            ]
+            first: 100
+          ) {
+            edges {
+              node {
+                id
+                tags {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }`
+      };
+      const res = await fetch('https://arweave.net/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(query)
       });
+      const json = await res.json();
+      const edges = json.data.transactions.edges;
+      return edges.map((edge: any) => {
+        const tags: Record<string, string> = {};
+        edge.node.tags.forEach((tag: any) => { tags[tag.name] = tag.value; });
+        const metadata: FileMetadata = {
+          name: tags['Document-Name'] || '',
+          type: tags['Document-Type'] || '',
+          size: Number(tags['Document-Size']) || 0,
+          sender: tags['Sender'] || '',
+          recipient: tags['Recipient'] || '',
+          timestamp: Number(tags['Timestamp']) || 0,
+          description: tags['Description'],
+          iv: tags['IV'],
+          sha256: tags['sha256'] || tags['SHA256'] || undefined,
+        };
+        return { id: edge.node.id, metadata };
+      });
+    } catch (error) {
+      console.error('Error fetching sent files from Arweave:', error);
+      toast.error('Failed to fetch sent files');
+      return [];
     }
-
-    return files;
   }
 }
 
-// Export singleton instance
 export const arweaveService = new ArweaveService();
