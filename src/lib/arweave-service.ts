@@ -11,8 +11,8 @@ const arweave = Arweave.init({
   timeout: 20000,
 });
 
-// JWK file path from .env or config
-const ARWEAVE_OWNER_JWK_PATH = import.meta.env.VITE_ARWEAVE_JWK_PATH || 'C:/Users/lisel/Downloads/3M15GHxKnXYtVEZQo5HF1KrUvRA4GYLNZmEUWX57rj0.json';
+// Load JWK from environment variable (Vercel/serverless compatible)
+const ARWEAVE_OWNER_JWK = import.meta.env.VITE_ARWEAVE_JWK_JSON ? JSON.parse(import.meta.env.VITE_ARWEAVE_JWK_JSON) : null;
 
 export interface FileMetadata {
   name: string;
@@ -41,23 +41,18 @@ class ArweaveService {
   }
 
   /**
-   * Load the app owner's Arweave wallet from the configured JWK path
-   * Robust: tries both public and local dev path, logs errors
+   * Load the app owner's Arweave wallet from environment variable (Vercel/serverless compatible)
    */
   async loadOwnerWallet(): Promise<void> {
     try {
-      // Try public directory first (Vite/Next will serve this for dev)
-      let res = await fetch('/arweave-jwk.json');
-      if (!res.ok) {
-        // Try fallback to env path if not found
-        res = await fetch(ARWEAVE_OWNER_JWK_PATH);
+      if (!ARWEAVE_OWNER_JWK) {
+        throw new Error('Missing ARWEAVE_JWK_JSON environment variable.');
       }
-      const jwk: JWKInterface = await res.json();
-      this.ownerWallet = jwk;
-      console.log('Loaded Arweave owner wallet');
+      this.ownerWallet = ARWEAVE_OWNER_JWK;
+      console.log('Loaded Arweave owner wallet from env variable');
     } catch (error) {
       console.error('Error loading Arweave owner wallet:', error);
-      toast.error('Failed to load Arweave wallet. Please ensure arweave-jwk.json is present in /public and accessible.');
+      toast.error('Failed to load Arweave wallet. Please ensure ARWEAVE_JWK_JSON is set in your environment.');
       this.ownerWallet = null;
     }
   }
