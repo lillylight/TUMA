@@ -84,7 +84,7 @@ const Send = () => {
       
       // Show payment confirmation
       setShowPaymentDialog(true);
-      handlePostPaymentUpload();
+      // Do NOT call handlePostPaymentUpload here!
       setSending(false);
     } catch (error) {
       console.error("Error preparing document:", error);
