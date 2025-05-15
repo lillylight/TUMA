@@ -3,7 +3,7 @@ import Header from "@/components/Header";
 
 const About = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 page-transition">
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-[#191919] dark:to-[#191919] page-transition">
       <Header />
       
       <main className="pt-28 px-6 pb-16 max-w-7xl mx-auto">

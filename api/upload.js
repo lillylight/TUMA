@@ -1,4 +1,3 @@
-import fs from 'fs';
 import Arweave from 'arweave';
 
 export default async function handler(req, res) {
@@ -9,12 +8,12 @@ export default async function handler(req, res) {
     const { ciphertext, iv, metadata } = req.body;
     const dataBuffer = Buffer.from(ciphertext, 'base64');
 
-    // Load JWK from environment variable path
-    const jwkPath = process.env.ARWEAVE_JWK_PATH;
-    if (!jwkPath) {
-      return res.status(500).json({ error: 'Missing ARWEAVE_JWK_PATH in environment' });
+    // Load JWK from environment variable (Vercel compatible)
+    const jwkEnv = process.env.ARWEAVE_JWK_JSON;
+    if (!jwkEnv) {
+      return res.status(500).json({ error: 'Missing ARWEAVE_JWK_JSON in environment' });
     }
-    const jwk = JSON.parse(fs.readFileSync(jwkPath, 'utf8'));
+    const jwk = JSON.parse(jwkEnv);
 
     // Initialize Arweave
     const arweave = Arweave.init({

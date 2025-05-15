@@ -202,7 +202,7 @@ setStorageUsed(Number(totalSize)); // store as number (bytes)
   }, []);
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 page-transition">
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-[#191919] dark:to-[#191919] page-transition">
       <Header />
       <main className="pt-28 px-4 sm:px-6 pb-16 max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
@@ -332,14 +332,14 @@ setStorageUsed(Number(totalSize)); // store as number (bytes)
             <div className="backdrop-blur-xl bg-white/40 dark:bg-gray-800 border border-white/20 dark:border-gray-700 shadow-lg rounded-xl p-6 lg:col-span-2">
               <h2 className="text-2xl font-bold mb-4 dark:text-white">Fund Your Wallet</h2>
               <p className="text-gray-600 dark:text-gray-400 mb-6">
-                Purchase ETH to pay for document sharing and gas fees. Choose an amount below or enter a custom amount.
+                Purchase USDC to pay for document sharing and gas fees. Choose an amount below or enter a custom amount.
               </p>
               <div className="mt-6 custom-fund-card-container">
                 <FundCard
-                  assetSymbol="ETH"
+                  assetSymbol="USDC"
                   country="US"
                   currency="USD"
-                  headerText="Purchase Ethereum"
+                  headerText="Purchase USDC"
                   buttonText="Purchase"
                   presetAmountInputs={['10', '20', '50']}
                 />

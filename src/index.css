@@ -98,12 +98,16 @@
 @layer components {
 
 /* Force dark mode backgrounds and input styling for all app pages except landing */
-.dark .bg-white, .dark .bg-blue-50, .dark .bg-blue-100, .dark .bg-blue-900, .dark .bg-gray-900, .dark .bg-gray-800, .dark .bg-gray-100, .dark .bg-gradient-to-b, .dark .bg-gradient-to-t, .dark .bg-gradient-to-r, .dark .bg-gradient-to-l, .dark .glass-panel, .dark .card-hover, .dark .page-transition, .dark .TabsContent, .dark .TabsList, .dark .TabsTrigger, .dark .DialogContent, .dark .DialogHeader, .dark .DialogFooter, .dark .DialogTitle, .dark .PopoverContent, .dark .PopoverHeader, .dark .PopoverFooter, .dark .PopoverTitle, .dark .sidebar, .dark .main, .dark .container, .dark .profile-section, .dark .documents-section, .dark .send-section, .dark .notfound-section, .dark .about-section, .dark .dashboard-section, .dark .statcard, .dark .file-list, .dark .file-row, .dark .input, .dark input, .dark textarea, .dark select, .dark .search-bar, .dark .search-input, .dark .search-box, .dark .search-field, .dark .form-input, .dark .form-control, .dark .form-group, .dark .dropdown-menu, .dark .dropdown-content, .dark .dropdown-item, .dark .dropdown, .dark .table, .dark .table-row, .dark .table-cell, .dark .table-header, .dark .table-footer, .dark .table-title, .dark .table-content, .dark .tab, .dark .tab-content, .dark .tab-header, .dark .tab-footer, .dark .tab-title, .dark .tab-list, .dark .tab-trigger, .dark .tab-panel, .dark .tab-section, .dark .tab-group, .dark .tab-container, .dark .tab-main, .dark .tab-sidebar, .dark .tab-profile, .dark .tab-documents, .dark .tab-send, .dark .tab-notfound, .dark .tab-about, .dark .tab-dashboard, .dark .tab-statcard, .dark .tab-file-list, .dark .tab-file-row, .dark .tab-input, .dark .tab-search-bar, .dark .tab-search-input, .dark .tab-search-box, .dark .tab-search-field, .dark .tab-form-input, .dark .tab-form-control, .dark .tab-form-group, .dark .tab-dropdown-menu, .dark .tab-dropdown-content, .dark .tab-dropdown-item, .dark .tab-dropdown, .dark .tab-table, .dark .tab-table-row, .dark .tab-table-cell, .dark .tab-table-header, .dark .tab-table-footer, .dark .tab-table-title, .dark .tab-table-content, .dark .tab-sidebar, .dark .tab-main, .dark .tab-container, .dark .tab-profile-section, .dark .tab-documents-section, .dark .tab-send-section, .dark .tab-notfound-section, .dark .tab-about-section, .dark .tab-dashboard-section, .dark .tab-statcard, .dark .tab-file-list, .dark .tab-file-row, .dark .tab-input, .dark .tab-search-bar, .dark .tab-search-input, .dark .tab-search-box, .dark .tab-search-field, .dark .tab-form-input, .dark .form-input, .dark input, .dark textarea, .dark select {
-    background: hsl(0 0% 10%) !important;
-    color: #fff !important;
-    border-color: hsl(0 0% 16%) !important;
+.dark .bg-white, .dark .bg-blue-50, .dark .bg-blue-100, .dark .bg-blue-900, .dark .bg-gray-900, .dark .bg-gray-800, .dark .bg-gray-100, .dark .bg-gradient-to-b, .dark .bg-gradient-to-t, .dark .bg-gradient-to-r, .dark .bg-gradient-to-l, .dark .glass-panel, .dark .card-hover, .dark .page-transition, .dark .TabsContent, .dark .TabsList, .dark .TabsTrigger, .dark .DialogContent, .dark .DialogHeader, .dark .DialogFooter, .dark .DialogTitle, .dark .PopoverContent, .dark .PopoverHeader, .dark .PopoverFooter, .dark .PopoverTitle, .dark .sidebar, .dark .main, .dark .container, .dark .profile-section, .dark .documents-section, .dark .send-section, .dark .notfound-section, .dark .about-section, .dark .dashboard-section, .dark .statcard, .dark .file-list, .dark .file-row, .dark .input, .dark input, .dark textarea, .dark select, .dark .search-bar, .dark .search-input, .dark .search-box, .dark .search-field, .dark .form-input, .dark .form-control, .dark .form-group, .dark .dropdown-menu, .dark .dropdown-content, .dark .dropdown-item, .dark .dropdown, .dark .file-row, .dark .tab-file-row, .dark .table-row, .dark .tab-table-row, .dark .file-list .dark .file-row, .dark .documents-section .dark .file-row, .dark .tab-documents-section .dark .tab-file-row, .dark .documents-section .dark .table-row, .dark .tab-documents-section .dark .tab-table-row {
+  background-color: #191919 !important;
+  transition: background 0.2s, box-shadow 0.2s;
 }
-
+.dark .file-row:hover, .dark .tab-file-row:hover, .dark .table-row:hover, .dark .tab-table-row:hover, .dark .file-list .dark .file-row:hover, .dark .documents-section .dark .file-row:hover, .dark .tab-documents-section .dark .tab-file-row:hover, .dark .documents-section .dark .table-row:hover, .dark .tab-documents-section .dark .tab-table-row:hover {
+  background-color: #232323 !important;
+  box-shadow: 0 0 10px 2px rgba(120,120,120,0.18);
+  z-index: 2;
+}
+}
 /* Header background for dark mode (non-landing) */
 .dark .header, .dark .bg-header, .dark .header-bg, .dark .navbar, .dark .main-header {
     background: hsl(0 0% 14%) !important; /* #232323 */
@@ -197,7 +201,6 @@
   .page-transition {
     @apply animate-fade-in animate-slide-in;
   }
-}
 
 /* For Firefox scrollbar customization */
 * {
@@ -292,6 +295,69 @@
 /* Override specific elements */
 .dark .custom-fund-card-container [class*="Card"],
 .dark .custom-fund-card-container [class*="card"],
+
+/* --- Custom: Override blue button backgrounds to gray in dark mode --- */
+.dark .bg-doc-deep-blue,
+.dark .bg-blue-600,
+.dark .bg-blue-700,
+.dark .bg-blue-800,
+.dark .bg-blue-900,
+.dark button.bg-doc-deep-blue,
+.dark button.bg-blue-600,
+.dark button.bg-blue-700,
+.dark button.bg-blue-800,
+.dark button.bg-blue-900,
+.dark [class*="btn"],
+.dark [class*="Btn"],
+.dark [class*="Button"],
+.dark .send-btn,
+.dark .fund-btn {
+  background-color: #444 !important;
+  color: #fff !important;
+  border-color: #555 !important;
+}
+.dark .bg-doc-deep-blue:hover,
+.dark .bg-blue-600:hover,
+.dark .bg-blue-700:hover,
+.dark .bg-blue-800:hover,
+.dark .bg-blue-900:hover,
+.dark button.bg-doc-deep-blue:hover,
+.dark button.bg-blue-600:hover,
+.dark button.bg-blue-700:hover,
+.dark button.bg-blue-800:hover,
+.dark button.bg-blue-900:hover,
+.dark [class*="btn"]:hover,
+.dark [class*="Btn"]:hover,
+.dark [class*="Button"]:hover,
+.dark .send-btn:hover,
+.dark .fund-btn:hover {
+  background-color: #666 !important;
+  color: #fff !important;
+  border-color: #888 !important;
+}
+
+/* --- Custom: Avatar/initial circles gray in dark mode --- */
+.dark .avatar,
+.dark .avatar-fallback,
+.dark .rounded-full.bg-blue-100,
+.dark .rounded-full.bg-blue-200,
+.dark .rounded-full.bg-blue-300,
+.dark .rounded-full.bg-blue-400,
+.dark .rounded-full.bg-blue-500,
+.dark .rounded-full.bg-blue-600,
+.dark .rounded-full.bg-blue-700,
+.dark .rounded-full.bg-blue-800,
+.dark .rounded-full.bg-blue-900,
+.dark .rounded-full.bg-blue,
+.dark .rounded-full[class*="bg-blue"],
+.dark .rounded-full[class*="bg-doc-deep-blue"],
+.dark .rounded-full[class*="bg-doc-soft-blue"],
+.dark .rounded-full[class*="bg-blue"] {
+  background-color: #444 !important;
+  color: #fff !important;
+  border-color: #555 !important;
+}
+
 .dark .custom-fund-card-container [class*="Container"],
 .dark .custom-fund-card-container [class*="container"],
 .dark .custom-fund-card-container [class*="Wrapper"],

@@ -221,7 +221,7 @@ const Documents = () => {
     const lastPage = Math.ceil(total/PAGE_SIZE);
     if (lastPage <= 1) return null;
     return (
-      <div className="flex justify-end items-center gap-2 mt-4">
+      <div className="flex justify-end items-center gap-2 mt-4 bg-gray-100 dark:bg-[#191919] rounded-lg p-2">
         <button disabled={page === 1} onClick={()=>setPage(page-1)} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">Prev</button>
         <span className="text-sm">Page {page} of {lastPage}</span>
         <button disabled={page === lastPage} onClick={()=>setPage(page+1)} className="px-3 py-1 rounded bg-gray-200 dark:bg-gray-700 disabled:opacity-50">Next</button>
@@ -230,7 +230,7 @@ const Documents = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 page-transition">
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50 dark:from-[#191919] dark:to-[#191919] page-transition">
       <Header />
       
       <main className="pt-28 px-6 pb-16 max-w-7xl mx-auto">
@@ -301,10 +301,10 @@ const Documents = () => {
                   <p className="mt-1 text-doc-medium-gray">{error}</p>
                 </div>
               ) : filteredReceived.length > 0 ? (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto bg-white dark:bg-[#191919]">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <tr className="border-b border-gray-200 dark:border-[#232323] bg-gray-100 dark:bg-[#191919]">
                         <th className="text-left py-3 px-4 font-medium text-doc-medium-gray">Name</th>
                         <th className="text-left py-3 px-4 font-medium text-doc-medium-gray">Sender</th>
                         <th className="text-left py-3 px-4 font-medium text-doc-medium-gray">Date</th>
@@ -317,7 +317,7 @@ const Documents = () => {
                       {paginatedReceived.map((doc) => (
                         <tr 
                           key={doc.id}
-                          className="border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          className="file-row bg-white dark:bg-[#191919] hover:bg-gray-100 dark:hover:bg-[#232323] border-b border-gray-200 dark:border-[#232323] transition-colors duration-150"
                         >
                           <td className="py-3 px-4">
                             <div className="flex items-center">
@@ -385,10 +385,10 @@ const Documents = () => {
                   <p className="mt-1 text-doc-medium-gray">{error}</p>
                 </div>
               ) : filteredSent.length > 0 ? (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto bg-white dark:bg-[#191919]">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <tr className="border-b border-gray-200 dark:border-[#232323] bg-gray-100 dark:bg-[#191919]">
                         <th className="text-left py-3 px-4 font-medium text-doc-medium-gray">Name</th>
                         <th className="text-left py-3 px-4 font-medium text-doc-medium-gray">Recipient</th>
                         <th className="text-left py-3 px-4 font-medium text-doc-medium-gray">Date</th>
@@ -401,7 +401,7 @@ const Documents = () => {
                       {paginatedSent.map((doc) => (
                         <tr 
                           key={doc.id}
-                          className="border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                          className="file-row bg-white dark:bg-[#191919] hover:bg-gray-100 dark:hover:bg-[#232323] border-b border-gray-200 dark:border-[#232323] transition-colors duration-150"
                         >
                           <td className="py-3 px-4">
                             <div className="flex items-center">
