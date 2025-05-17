@@ -56,7 +56,7 @@ app.post('/api/upload', async (req, res) => {
 // --- Coinbase Commerce Dynamic Charge Endpoint ---
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-const COINBASE_COMMERCE_API_KEY = process.env.COINBASE_COMMERCE_API_KEY;
+const COINBASE_COMMERCE_API_KEY = process.env.vite_COINBASE_COMMERCE_API_KEY;
 const COINBASE_COMMERCE_API_URL = 'https://api.commerce.coinbase.com/charges';
 
 app.get('/api/chargeStatus', async (req, res) => {

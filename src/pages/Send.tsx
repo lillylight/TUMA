@@ -653,6 +653,7 @@ const Send = () => {
           </div>
         </div>
       </main>
+      {/* Payment Dialog */}
       <Dialog
         open={showPaymentDialog && !(uploadComplete && !uploading && !uploadError)}
         onOpenChange={(open) => {
@@ -679,28 +680,102 @@ const Send = () => {
           <DialogHeader className="flex flex-col items-center">
             <DialogTitle className="text-center w-full">Service Fee Payment</DialogTitle>
           </DialogHeader>
+          
           {uploading ? (
             <div className="mb-4 text-blue-500 text-center">
-              You can close this dialog. You will be notified via the notification bell when your file upload is complete.
+              {uploadProgress !== null && uploadProgress < 100 ? (
+                <>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                    <div 
+                      className="bg-doc-deep-blue h-2.5 rounded-full transition-all duration-300" 
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p>Uploading: {uploadProgress}%</p>
+                </>
+              ) : (
+                <p>Processing your file... This may take a moment.</p>
+              )}
+            </div>
+          ) : paymentStatus === 'error' ? (
+            <div className="mb-4 text-center">
+              <div className="flex justify-center mb-2">
+                <AlertCircle className="h-8 w-8 text-red-500" />
+              </div>
+              <p className="text-red-500 mb-4">
+                {paymentError || 'Payment failed. Please try again.'}
+              </p>
+              <button
+                onClick={retryPayment}
+                className="px-4 py-2 bg-doc-deep-blue text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                Retry Payment
+              </button>
+            </div>
+          ) : paymentStatus === 'success' ? (
+            <div className="mb-4 text-center">
+              <div className="flex justify-center mb-2">
+                <svg className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-green-500 mb-2">Payment Successful!</p>
+              <p className="text-sm text-doc-medium-gray mb-4">Your file is being uploaded...</p>
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-green-500 h-2.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${uploadProgress || 0}%` }}
+                ></div>
+              </div>
             </div>
           ) : (
-            <div className="mb-4 flex flex-col items-center">
-              <p className="text-doc-medium-gray mb-2 text-center">
+            <div className="mb-4 flex flex-col items-center w-full">
+              <p className="text-doc-medium-gray mb-4 text-center">
                 To send this file securely, a service fee is required. The platform will cover Arweave storage costs.
               </p>
-              <div className="mb-2 text-center">
-                <span className="font-medium">Service Fee:</span>
-                <span className="ml-2 text-doc-deep-blue">{serviceFee} USDC</span>
+              <div className="w-full bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 mb-4">
+                <div className="flex justify-between mb-2">
+                  <span className="text-doc-medium-gray">Service Fee:</span>
+                  <span className="font-medium">{serviceFee} USDC</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-doc-medium-gray">File size tier:</span>
+                  <span className="text-doc-deep-blue">{fileSizeTier}</span>
+                </div>
               </div>
-              <div className="mb-2 text-center">
-                <span className="font-medium">File size tier:</span>
-                <span className="ml-2 text-doc-deep-blue">{fileSizeTier}</span>
+              
+              {/* Coinbase Commerce Checkout */}
+              <div className="w-full flex justify-center mt-2">
+                <Checkout
+                  chargeHandler={chargeHandler}
+                  onStatus={(status) => {
+                    const { statusName, statusData } = status;
+                    console.log('Checkout status:', statusName, statusData);
+                    
+                    if (statusName === 'success') {
+                      setPaymentStatus('success');
+                      setChargeId(statusData.chargeId);
+                      // The polling effect will handle the rest
+                    } else if (statusName === 'error') {
+                      setPaymentStatus('error');
+                      setPaymentError('Payment was not completed');
+                    }
+                  }}
+                >
+                  <CheckoutButton 
+                    text={`Pay ${serviceFee} USDC`}
+                    className="w-full justify-center py-3 px-6 bg-doc-deep-blue hover:bg-blue-600 text-white font-medium rounded-lg transition-colors"
+                    disabled={paymentStatus === 'processing'}
+                  />
+                </Checkout>
               </div>
-              <div className="text-xs text-doc-medium-gray mt-1 text-center">
+              
+              <div className="text-xs text-doc-medium-gray mt-4 text-center">
                 Only the sender and recipient will be able to access and decrypt this file.
               </div>
             </div>
           )}
+          
           {/* Uploading and upload complete states */}
           {uploading && (
             <div className="mt-4 flex flex-col items-center">
@@ -731,41 +806,6 @@ const Send = () => {
             </div>
           )}
           {uploadError && <div className="mt-4 text-red-600">{uploadError}</div>}
-          {/* Payment section only if not uploading or upload complete */}
-          {!uploading && !uploadComplete && (
-            <>
-              {showPaymentDialog && (
-                <Checkout
-                  chargeHandler={chargeHandler}
-                  onStatus={async (status) => {
-                    const { statusName } = status;
-                    if (statusName === 'success') {
-                      setPaymentStatus('success');
-                      setPaymentError(null);
-                      setShowPaymentDialog(false);
-                      handlePostPaymentUpload();
-                    } else if (statusName === 'error') {
-                      setPaymentStatus('error');
-                      setPaymentError('Payment failed');
-                    } else if (statusName === 'pending') {
-                      setPaymentStatus('processing');
-                    } else if (statusName === 'init' || statusName === 'fetchingData' || statusName === 'ready') {
-                      setPaymentStatus('processing');
-                    }
-                  }}
-                >
-                  <CheckoutButton coinbaseBranded className="w-full py-3 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors mb-2" />
-                  <CheckoutStatus />
-                </Checkout>
-              )}
-              {paymentStatus === 'error' as typeof paymentStatus && (
-                <div className="text-red-600 flex flex-col">
-                  Payment failed: {paymentError}
-                  <button onClick={retryPayment} className="underline text-blue-600 mt-1">Retry Payment</button>
-                </div>
-              )}
-            </>
-          )}
         </DialogContent>
       </Dialog>
       {/* Upload Notification Bell */}
