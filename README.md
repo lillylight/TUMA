@@ -1,4 +1,85 @@
-# Welcome to your Lovable project
+# Document Exchange Platform
+
+A secure, blockchain-powered document exchange platform with onchain payments and permanent storage on Arweave.
+
+## 🚀 Features
+
+- **Secure File Transfers**: End-to-end encrypted document sharing
+- **Blockchain Payments**: Pay with USDC via Coinbase/OnchainKit
+- **Permanent Storage**: Files stored on Arweave
+- **Modern UI**: Built with React, TypeScript, and Shadcn UI
+
+## 🚀 Deployment to Vercel
+
+### Prerequisites
+
+- [Vercel Account](https://vercel.com/signup)
+- [GitHub Account](https://github.com)
+- [Coinbase Commerce API Key](https://commerce.coinbase.com/dashboard/settings)
+- [Arweave JWK](https://www.arweave.org/wallet)
+
+### Deployment Steps
+
+1. **Fork the Repository**
+   - Fork this repository to your GitHub account
+
+2. **Deploy to Vercel**
+   - Click the button below to deploy to Vercel
+   
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=YOUR_REPO_URL&env=VITE_PUBLIC_ONCHAINKIT_API_KEY,VITE_PUBLIC_PRODUCT_ID,VITE_COINBASE_COMMERCE_API_KEY,VITE_ARWEAVE_JWK_JSON,ARWEAVE_JWK_PATH&envDescription=Environment%20variables%20required%20for%20the%20application&envLink=https%3A%2F%2Fgithub.com%2Fyourusername%2Fdocu-exchange%23environment-variables)
+
+3. **Configure Environment Variables**
+   - Add the following environment variables in your Vercel project settings:
+     ```
+     VITE_PUBLIC_ONCHAINKIT_API_KEY=your_onchainkit_api_key
+     VITE_PUBLIC_PRODUCT_ID=your_product_id
+     VITE_COINBASE_COMMERCE_API_KEY=your_coinbase_commerce_api_key
+     VITE_ARWEAVE_JWK_JSON=your_arweave_jwk_json
+     ARWEAVE_JWK_PATH=./arweave-jwk.json
+     ```
+
+4. **Deploy**
+   - Push your changes to trigger a new deployment
+   - Vercel will automatically build and deploy your application
+
+## 🔧 Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/docu-exchange.git
+   cd docu-exchange
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   - Create a `.env` file in the root directory
+   - Add the required environment variables (see `.env.example`)
+
+4. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Start the backend server**
+   ```bash
+   node server.cjs
+   ```
+
+## 🔒 Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_PUBLIC_ONCHAINKIT_API_KEY` | API key for OnchainKit | Yes |
+| `VITE_PUBLIC_PRODUCT_ID` | Product ID for the application | Yes |
+| `VITE_COINBASE_COMMERCE_API_KEY` | API key for Coinbase Commerce | Yes |
+| `VITE_ARWEAVE_JWK_JSON` | Arweave wallet JSON (stringified) | Yes |
+| `ARWEAVE_JWK_PATH` | Path to Arweave wallet file | Yes |
+
+## 📄 Project Overview
 
 ## Project info
 
