@@ -32,6 +32,16 @@ const Send = () => {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadComplete, setUploadComplete] = useState(false);
 
+  // Free tier usage tracking
+  const [freeTierUsage, setFreeTierUsage] = useState<number>(() => {
+    const stored = localStorage.getItem('freeTierUsage');
+    return stored ? parseInt(stored, 10) : 0;
+  });
+  const [lastFreeTierReset, setLastFreeTierReset] = useState<number>(() => {
+    const stored = localStorage.getItem('lastFreeTierReset');
+    return stored ? parseInt(stored, 10) : Date.now();
+  });
+
   const { address: senderAddress } = useAccount();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,24 +105,67 @@ const Send = () => {
 
   useEffect(() => {
     if (file) {
-      if (file.size < 2 * 1024 * 1024) {
-        setFileSizeTier('Test Tier (<2MB)');
-        setServiceFee('0.05');
-      } else if (file.size < 10e6) {
-        setFileSizeTier('Medium (2-10MB)');
-        setServiceFee('5.00');
-      } else if (file.size < 10e6) {
-        setFileSizeTier('Medium (1-10MB)');
-        setServiceFee('5.00');
-      } else if (file.size < 100e6) {
-        setFileSizeTier('Large (10-100MB)');
-        setServiceFee('10.00');
+      let tier = null;
+      let fee = null;
+      const sizeMB = file.size / 1024 / 1024;
+      // Pricing tiers
+      if (sizeMB < 10) {
+        tier = 'Free Tier (<10MB)';
+        fee = '0.5';
+      } else if (sizeMB < 20) {
+        tier = 'Tier 1 (10-20MB)';
+        fee = '1.00';
+      } else if (sizeMB < 50) {
+        tier = 'Tier 2 (20-50MB)';
+        fee = '2.00';
+      } else if (sizeMB < 100) {
+        tier = 'Tier 3 (50-100MB)';
+        fee = '3.00';
+      } else if (sizeMB < 200) {
+        tier = 'Tier 4 (100-200MB)';
+        fee = '5.00';
       } else {
-        setFileSizeTier('Extra Large (>100MB)');
-        setServiceFee('25.00');
+        tier = 'Tier 5 (>200MB)';
+        fee = '10.00';
+      }
+      // Free tier logic
+      if (tier === 'Free Tier (<10MB)') {
+        setFileSizeTier(tier);
+        setServiceFee(fee);
+      } else {
+        setFileSizeTier(tier);
+        setServiceFee(fee);
       }
     }
   }, [file]);
+
+  // Track free tier usage and apply MND discount
+  const getMNDDiscount = () => {
+    if (!file) return false;
+    const sizeMB = file.size / 1024 / 1024;
+    if (sizeMB >= 10) return false;
+    if (freeTierUsage === 3) {
+      // Check for MND tag in file name or message
+      const mndTag = (file.name + ' ' + (message || '')).toLowerCase().includes('mnd');
+      return mndTag;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    if (!file) return;
+    const sizeMB = file.size / 1024 / 1024;
+    if (sizeMB < 10) {
+      // Free tier logic
+      if (freeTierUsage < 3) {
+        setServiceFee('0.5');
+      } else if (freeTierUsage === 3 && getMNDDiscount()) {
+        setServiceFee((0.5 / 2).toString());
+      } else {
+        setServiceFee('0.5');
+      }
+    }
+  }, [file, freeTierUsage, message]);
 
   // Effect: When chargeId changes and paymentStatus is 'pending', wait 30s before starting upload
 
@@ -213,22 +266,26 @@ const Send = () => {
   };
 
   const handlePostPaymentUpload = async () => {
-    if (uploading) return; // Prevent multiple uploads
-
+    if (uploading) return;
     setUploading(true);
     setUploadError(null);
     setUploadProgress(0);
     setUploadComplete(false);
-    let cipherArr: Uint8Array;
-    let metadata: FileMetadata;
+    const fileToUpload = file;
+    const recipientToSend = recipient;
+    const recipientAddressToSend = recipientAddress;
+    const messageToSend = message;
+    setFile(null);
+    setRecipient("");
+    setRecipientAddress("");
+    setMessage("");
+    let cipherArr;
+    let metadata;
     try {
       if (!file || !recipientAddress || !senderAddress) throw new Error('Missing file or addresses');
       const buffer = await file.arrayBuffer();
-      // Use documentId as salt for key derivation
       if (!documentId) throw new Error('Missing documentId for salt');
-      // Use HKDF-based encryption
       const { ciphertext, iv } = await encryptFileBufferHKDF(buffer, senderAddress.toLowerCase(), recipientAddress.toLowerCase(), documentId);
-      // Compute SHA-256 hash of ciphertext (integrity check)
       const hashBuffer = await crypto.subtle.digest('SHA-256', Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0)));
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const sha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -243,35 +300,23 @@ const Send = () => {
         iv,
         sha256,
         chargeId: chargeId || undefined,
-        documentId, // Store documentId for HKDF salt
+        documentId,
       };
       if (typeof ciphertext === 'string') {
         try {
           cipherArr = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
         } catch (e) {
-          console.error('[Upload Debug] Failed to convert base64 ciphertext to Uint8Array:', e, ciphertext);
           throw new Error('Failed to convert ciphertext to Uint8Array');
         }
       } else {
-        console.error('[Upload Debug] Ciphertext is not a string:', ciphertext);
         throw new Error('Invalid ciphertext type');
       }
-
-      // Logging for debugging
-      console.log('[Upload Debug] cipherArr type:', Object.prototype.toString.call(cipherArr));
-      console.log('[Upload Debug] cipherArr length:', cipherArr?.length);
-      console.log('[Upload Debug] metadata:', metadata);
-      if (!(cipherArr instanceof Uint8Array)) {
-        throw new Error('cipherArr is not a Uint8Array');
-      }
-    } catch (err: any) {
+    } catch (err) {
       setUploadError(err.message || 'Upload failed');
       setUploading(false);
       toast.error('Upload failed: ' + (err.message || 'Unknown error'));
       return;
     }
-
-    // Show uploading toast and await confirmation
     const toastId = toast.loading('Uploading file to Arweave and waiting for confirmation...');
     try {
       const arweaveTxId = await arweaveService.uploadFileToArweave(
@@ -292,9 +337,23 @@ const Send = () => {
       setRecipient("");
       setRecipientAddress("");
       setMessage("");
-      // Don't close dialog immediately; let user see completion state
       saveRecentRecipient({ name: recipient, address: recipientAddress });
       setUploadProgress(null);
+      // Free tier usage tracking
+      const sizeMB = fileToUpload ? fileToUpload.size / 1024 / 1024 : 0;
+      if (sizeMB < 10) {
+        let usage = freeTierUsage;
+        if (usage < 3) {
+          usage++;
+          setFreeTierUsage(usage);
+          localStorage.setItem('freeTierUsage', usage.toString());
+        } else if (usage === 3 && getMNDDiscount()) {
+          // Only increment if MND discount was used
+          usage++;
+          setFreeTierUsage(usage);
+          localStorage.setItem('freeTierUsage', usage.toString());
+        }
+      }
     } finally {
       setUploading(false);
     }
@@ -620,7 +679,11 @@ const Send = () => {
               <h3 className="font-medium mb-4">Pricing Tiers</h3>
               <ul className="space-y-3 text-sm">
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">Up to 20MB:</span>
+                  <span className="text-doc-medium-gray">Free Tier (&lt;10MB):</span>
+                  <span className="font-medium">$0.50 (first 3 files free, 4th file 50% off with MND tag)</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">10MB to 20MB:</span>
                   <span className="font-medium">$1.00</span>
                 </li>
                 <li className="flex justify-between">
@@ -630,6 +693,14 @@ const Send = () => {
                 <li className="flex justify-between">
                   <span className="text-doc-medium-gray">50MB to 100MB:</span>
                   <span className="font-medium">$3.00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">100MB to 200MB:</span>
+                  <span className="font-medium">$5.00</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">&gt;200MB:</span>
+                  <span className="font-medium">$10.00</span>
                 </li>
               </ul>
             </div>

@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { Menu, Moon, Sun, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAccount } from 'wagmi';
+import { toast } from "sonner";
 import { 
   Wallet, 
   ConnectWallet, 
@@ -55,9 +56,9 @@ const Header = () => {
     >
       <div className={`${location.pathname === '/landing' ? 'bg-transparent border-none shadow-none backdrop-blur-none' : 'backdrop-blur-xl bg-white/40 dark:bg-[#191919] border border-white/20 dark:border-[#232323] shadow-lg'} rounded-xl mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16 transition-all duration-300 ${location.pathname !== '/landing' ? 'hover:bg-white/50 dark:hover:bg-[#232323]/90' : ''}`}>
         <div className="flex items-center">
-          <span className="text-xl font-bold bg-gradient-to-r from-doc-deep-blue to-blue-500 bg-clip-text text-transparent">
+          <NavLink to="/send" className="text-xl font-bold bg-gradient-to-r from-doc-deep-blue to-blue-500 bg-clip-text text-transparent focus:outline-none focus:ring-2 focus:ring-blue-400 rounded transition-colors duration-200">
             TUMA
-          </span>
+          </NavLink>
         </div>
 
         {isConnected ? (
@@ -103,14 +104,19 @@ const Header = () => {
                 </Wallet>
               </div>
               <div style={{ marginLeft: '1.5rem' }}>
-                <Toggle 
-                  aria-label="Toggle dark mode"
-                  className="p-2 rounded-full"
-                  pressed={theme === "dark"}
-                  onPressedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-                >
-                  {theme === "dark" ? <Moon size={20} /> : <Sun size={20} />}
-                </Toggle>
+                <div className="relative group">
+                  <Toggle 
+                    aria-label="Dark mode coming soon"
+                    className="p-2 rounded-full cursor-not-allowed opacity-70"
+                    pressed={false}
+                    onPressedChange={() => toast.info("Dark mode coming soon!")}
+                  >
+                    <Sun size={20} />
+                  </Toggle>
+                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+                    Coming Soon
+                  </div>
+                </div>
               </div>
             </nav>
           )
@@ -162,14 +168,19 @@ const Header = () => {
                   </WalletDropdown>
                 </Wallet>
               )}
-              <Toggle 
-                aria-label="Toggle dark mode"
-                className="p-2 rounded-full"
-                pressed={theme === "dark"}
-                onPressedChange={() => setTheme(theme === "dark" ? "light" : "dark")}
-              >
-                {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-              </Toggle>
+              <div className="relative group">
+                <Toggle 
+                  aria-label="Dark mode coming soon"
+                  className="p-2 rounded-full cursor-not-allowed opacity-70"
+                  pressed={false}
+                  onPressedChange={() => toast.info("Dark mode coming soon!")}
+                >
+                  <Sun size={18} />
+                </Toggle>
+                <div className="absolute top-12 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap pointer-events-none">
+                  Coming Soon
+                </div>
+              </div>
             </div>
           </nav>
         </div>
