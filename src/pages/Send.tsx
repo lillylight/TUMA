@@ -109,63 +109,34 @@ const Send = () => {
       let fee = null;
       const sizeMB = file.size / 1024 / 1024;
       // Pricing tiers
-      if (sizeMB < 10) {
-        tier = 'Free Tier (<10MB)';
-        fee = '0.5';
+      if (sizeMB < 0.1) {
+        tier = 'Tier 1 (<100KB)';
+        fee = '0.05';
       } else if (sizeMB < 20) {
-        tier = 'Tier 1 (10-20MB)';
+        tier = 'Tier 2 (100KB-20MB)';
         fee = '1.00';
       } else if (sizeMB < 50) {
-        tier = 'Tier 2 (20-50MB)';
+        tier = 'Tier 3 (20-50MB)';
         fee = '2.00';
       } else if (sizeMB < 100) {
-        tier = 'Tier 3 (50-100MB)';
+        tier = 'Tier 4 (50-100MB)';
         fee = '3.00';
-      } else if (sizeMB < 200) {
-        tier = 'Tier 4 (100-200MB)';
+      } else {
+        tier = 'Tier 5 (>100MB)';
         fee = '5.00';
-      } else {
-        tier = 'Tier 5 (>200MB)';
-        fee = '10.00';
       }
-      // Free tier logic
-      if (tier === 'Free Tier (<10MB)') {
-        setFileSizeTier(tier);
-        setServiceFee(fee);
-      } else {
-        setFileSizeTier(tier);
-        setServiceFee(fee);
-      }
+      setFileSizeTier(tier);
+      setServiceFee(fee);
     }
   }, [file]);
-
-  // Track free tier usage and apply MND discount
-  const getMNDDiscount = () => {
-    if (!file) return false;
-    const sizeMB = file.size / 1024 / 1024;
-    if (sizeMB >= 10) return false;
-    if (freeTierUsage === 3) {
-      // Check for MND tag in file name or message
-      const mndTag = (file.name + ' ' + (message || '')).toLowerCase().includes('mnd');
-      return mndTag;
-    }
-    return false;
-  };
 
   useEffect(() => {
     if (!file) return;
     const sizeMB = file.size / 1024 / 1024;
     if (sizeMB < 10) {
-      // Free tier logic
-      if (freeTierUsage < 3) {
-        setServiceFee('0.5');
-      } else if (freeTierUsage === 3 && getMNDDiscount()) {
-        setServiceFee((0.5 / 2).toString());
-      } else {
-        setServiceFee('0.5');
-      }
+      setServiceFee('0.50');
     }
-  }, [file, freeTierUsage, message]);
+  }, [file]);
 
   // Effect: When chargeId changes and paymentStatus is 'pending', wait 30s before starting upload
 
@@ -339,21 +310,6 @@ const Send = () => {
       setMessage("");
       saveRecentRecipient({ name: recipient, address: recipientAddress });
       setUploadProgress(null);
-      // Free tier usage tracking
-      const sizeMB = fileToUpload ? fileToUpload.size / 1024 / 1024 : 0;
-      if (sizeMB < 10) {
-        let usage = freeTierUsage;
-        if (usage < 3) {
-          usage++;
-          setFreeTierUsage(usage);
-          localStorage.setItem('freeTierUsage', usage.toString());
-        } else if (usage === 3 && getMNDDiscount()) {
-          // Only increment if MND discount was used
-          usage++;
-          setFreeTierUsage(usage);
-          localStorage.setItem('freeTierUsage', usage.toString());
-        }
-      }
     } finally {
       setUploading(false);
     }
@@ -679,28 +635,24 @@ const Send = () => {
               <h3 className="font-medium mb-4">Pricing Tiers</h3>
               <ul className="space-y-3 text-sm">
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">Free Tier (&lt;10MB):</span>
-                  <span className="font-medium">$0.50 (first 3 files free, 4th file 50% off with MND tag)</span>
+                  <span className="text-doc-medium-gray">Tier 1 (<100KB):</span>
+                  <span className="font-medium">$0.05</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">10MB to 20MB:</span>
+                  <span className="text-doc-medium-gray">Tier 2 (100KB-20MB):</span>
                   <span className="font-medium">$1.00</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">20MB to 50MB:</span>
+                  <span className="text-doc-medium-gray">Tier 3 (20-50MB):</span>
                   <span className="font-medium">$2.00</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">50MB to 100MB:</span>
+                  <span className="text-doc-medium-gray">Tier 4 (50-100MB):</span>
                   <span className="font-medium">$3.00</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">100MB to 200MB:</span>
+                  <span className="text-doc-medium-gray">Tier 5 (>100MB):</span>
                   <span className="font-medium">$5.00</span>
-                </li>
-                <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">&gt;200MB:</span>
-                  <span className="font-medium">$10.00</span>
                 </li>
               </ul>
             </div>
