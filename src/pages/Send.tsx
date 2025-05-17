@@ -26,6 +26,7 @@ const Send = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'processing' | 'success' | 'error'>('idle');
+  const [hasUploadStarted, setHasUploadStarted] = useState(false);
   const [chargeId, setChargeId] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false); // Controls the Checkout modal
@@ -132,9 +133,7 @@ const Send = () => {
 
 
 
-  // Effect: When chargeId changes and paymentStatus is 'pending', wait 30s before starting upload
-
-  // Auto-close payment dialog after 10 seconds if not closed by user
+  // Payment status is now handled by Coinbase API responses only
 
   // Cleanup timeout if upload starts or completes
   useEffect(() => {
@@ -160,7 +159,7 @@ const Send = () => {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (
-      paymentStatus === 'processing' &&
+      (paymentStatus === 'processing' || paymentStatus === 'pending') &&
       chargeId &&
       !uploading &&
       !uploadComplete &&
@@ -170,22 +169,44 @@ const Send = () => {
         try {
           const res = await fetch(`/api/chargeStatus?chargeId=${chargeId}`);
           const data = await res.json();
-          if (data.statusName && ['PENDING', 'pending'].includes(data.statusName)) {
-            setPaymentStatus('pending');
-            setPaymentError(null);
-            setShowPaymentDialog(false);
-            // Start upload immediately when status is PENDING
-            handlePostPaymentUpload();
-          } else if (data.statusName && ['CONFIRMED', 'COMPLETED', 'confirmed', 'completed', 'RESOLVED', 'resolved', 'PAID', 'paid', 'SUCCESS', 'success'].includes(data.statusName)) {
-            setPaymentStatus('success');
-            setPaymentError(null);
-            setShowPaymentDialog(false);
-            setTimeout(() => handlePostPaymentUpload(), 500); // slight delay for UI
-          } else if (data.statusName && data.statusName.toLowerCase().includes('error')) {
-            setPaymentStatus('error');
-            setPaymentError('Payment failed');
+          
+          if (data.statusName) {
+            const status = data.statusName.toLowerCase();
+            
+            // Handle pending status from Coinbase - start upload immediately
+            if (status === 'pending' && !hasUploadStarted) {
+              console.log('Coinbase status is pending - starting upload');
+              setPaymentStatus('pending');
+              setPaymentError(null);
+              setShowPaymentDialog(false);
+              setHasUploadStarted(true);
+              // Start upload immediately when status is pending from Coinbase
+              handlePostPaymentUpload();
+              return; // Exit early after starting upload
+            }
+            // Handle processing status (waiting for payment)
+            else if (status === 'processing') {
+              setPaymentStatus('processing');
+              return; // Keep polling
+            }
+            // Handle successful payment
+            else if (['confirmed', 'completed', 'resolved', 'paid', 'success'].includes(status)) {
+              setPaymentStatus('success');
+              setPaymentError(null);
+              setShowPaymentDialog(false);
+              // Only start upload if not already started from pending state
+              if (!hasUploadStarted) {
+                handlePostPaymentUpload();
+              }
+            } 
+            // Handle errors
+            else if (status.includes('error') || status.includes('failed')) {
+              setPaymentStatus('error');
+              setPaymentError('Payment failed');
+            }
           }
         } catch (e: any) {
+          console.error('Error polling payment status:', e);
           // Optionally: setPaymentError(e.message);
         }
       };
@@ -215,8 +236,7 @@ const Send = () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to create charge');
       setChargeId(data.id); // store chargeId for polling
-      setPaymentStatus('pending'); // set payment status to pending immediately after charge creation
-      // Timer is now handled by the effect that depends on chargeId and paymentStatus
+      setPaymentStatus('processing'); // set payment status to processing while waiting for Coinbase response
       return data.id; // chargeId
     } catch (err: any) {
       setPaymentStatus('error');
