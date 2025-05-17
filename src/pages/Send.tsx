@@ -635,7 +635,7 @@ const Send = () => {
               <h3 className="font-medium mb-4">Pricing Tiers</h3>
               <ul className="space-y-3 text-sm">
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">Tier 1 (<100KB):</span>
+                  <span className="text-doc-medium-gray">Tier 1 (&lt;100KB):</span>
                   <span className="font-medium">$0.05</span>
                 </li>
                 <li className="flex justify-between">
@@ -651,7 +651,7 @@ const Send = () => {
                   <span className="font-medium">$3.00</span>
                 </li>
                 <li className="flex justify-between">
-                  <span className="text-doc-medium-gray">Tier 5 (>100MB):</span>
+                  <span className="text-doc-medium-gray">Tier 5 (&gt;100MB):</span>
                   <span className="font-medium">$5.00</span>
                 </li>
               </ul>
