@@ -13,8 +13,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node server.cjs",
-    "vercel-build": "node vercel-build.js",
-    "now-build": "node vercel-build.js"
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@coinbase/onchainkit": "latest",

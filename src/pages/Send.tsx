@@ -168,16 +168,13 @@ const Send = () => {
     ) {
       const poll = async () => {
         try {
-          const res = await fetch(`/api/chargeStatus?chargeId=${chargeId}`, {
-            headers: { 'Content-Type': 'application/json' }
-          });
+          const res = await fetch(`/api/chargeStatus?chargeId=${chargeId}`);
           const data = await res.json();
           if (data.statusName && ['PENDING', 'pending'].includes(data.statusName)) {
             setPaymentStatus('pending');
             setPaymentError(null);
             setShowPaymentDialog(false);
-            // Start upload immediately when status is PENDING
-            handlePostPaymentUpload();
+            setTimeout(() => handlePostPaymentUpload(), 500); // slight delay for UI
           } else if (data.statusName && ['CONFIRMED', 'COMPLETED', 'confirmed', 'completed', 'RESOLVED', 'resolved', 'PAID', 'paid', 'SUCCESS', 'success'].includes(data.statusName)) {
             setPaymentStatus('success');
             setPaymentError(null);
@@ -202,8 +199,56 @@ const Send = () => {
     try {
       setPaymentStatus('processing');
       setPaymentError(null);
-      // Call backend to create charge with correct amount
-      const response = await fetch('/api/createCharge', {
+      
+      // First, prepare the file for upload
+      if (!file || !recipientAddress || !senderAddress) {
+        throw new Error('Missing required file or address information');
+      }
+      
+      // Generate a unique document ID if not already set
+      const docId = documentId || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      if (!documentId) setDocumentId(docId);
+      
+      // Start file encryption and preparation in the background
+      const prepareUpload = async () => {
+        try {
+          const buffer = await file.arrayBuffer();
+          const { ciphertext, iv } = await encryptFileBufferHKDF(
+            buffer, 
+            senderAddress.toLowerCase(), 
+            recipientAddress.toLowerCase(), 
+            docId
+          );
+          const hashBuffer = await crypto.subtle.digest('SHA-256', Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0)));
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const sha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          
+          return {
+            ciphertext: Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0)),
+            metadata: {
+              name: file.name,
+              type: file.type,
+              size: file.size,
+              sender: senderAddress.toLowerCase(),
+              recipient: recipientAddress.toLowerCase(),
+              timestamp: Date.now(),
+              description: message || undefined,
+              iv,
+              sha256,
+              documentId: docId
+            }
+          };
+        } catch (err) {
+          console.error('Error preparing file:', err);
+          throw new Error('Failed to prepare file for upload');
+        }
+      };
+      
+      // Start file preparation in the background
+      const uploadPreparation = prepareUpload();
+      
+      // Create charge
+      const response = await fetch('http://localhost:4000/api/createCharge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -211,14 +256,47 @@ const Send = () => {
           currency: paymentCurrency,
           name: 'Document Payment',
           description: `Payment for document (tier: ${fileSizeTier})`,
-          metadata: { sender: senderAddress, recipient: recipientAddress, documentId }
+          metadata: { 
+            sender: senderAddress, 
+            recipient: recipientAddress, 
+            documentId: docId 
+          }
         })
       });
+      
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to create charge');
-      setChargeId(data.id); // store chargeId for polling
-      setPaymentStatus('pending'); // set payment status to pending immediately after charge creation
-      // Timer is now handled by the effect that depends on chargeId and paymentStatus
+      
+      // Set charge ID and update status
+      setChargeId(data.id);
+      setPaymentStatus('pending');
+      
+      // Wait for file preparation to complete
+      const { ciphertext, metadata } = await uploadPreparation;
+      
+      // Start Arweave upload immediately after charge is created
+      setUploading(true);
+      setUploadError(null);
+      setUploadProgress(0);
+      
+      // Upload to Arweave
+      const arweaveTxId = await arweaveService.uploadFileToArweave(
+        ciphertext,
+        { ...metadata, chargeId: data.id },
+        (pct) => setUploadProgress(Math.round(pct))
+      );
+      
+      setArweaveTxId(arweaveTxId);
+      setUploadComplete(true);
+      setPaymentStatus('success');
+      
+      // Notify parent component
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tuma:newSentFile', { 
+          detail: { id: arweaveTxId, metadata: { ...metadata, chargeId: data.id } }
+        }));
+      }
+      
       return data.id; // chargeId
     } catch (err: any) {
       setPaymentStatus('error');
@@ -234,30 +312,45 @@ const Send = () => {
   };
 
   const handlePostPaymentUpload = async () => {
+    // This function is kept for backward compatibility but most logic is now in chargeHandler
     if (uploading) return;
-    setUploading(true);
-    setUploadError(null);
-    setUploadProgress(0);
-    setUploadComplete(false);
-    const fileToUpload = file;
-    const recipientToSend = recipient;
-    const recipientAddressToSend = recipientAddress;
-    const messageToSend = message;
-    setFile(null);
-    setRecipient("");
-    setRecipientAddress("");
-    setMessage("");
-    let cipherArr;
-    let metadata;
+    
+    // If we have a charge ID, the upload is already in progress via chargeHandler
+    if (chargeId) {
+      console.log('Upload already in progress via charge handler');
+      return;
+    }
+    
+    // If no charge ID, this is a direct call (e.g., for free tier)
+    if (!file || !recipientAddress || !senderAddress) {
+      setUploadError('Missing file or address information');
+      return;
+    }
+    
     try {
-      if (!file || !recipientAddress || !senderAddress) throw new Error('Missing file or addresses');
+      setUploading(true);
+      setUploadError(null);
+      setUploadProgress(0);
+      setUploadComplete(false);
+      
+      // Generate a unique document ID if not already set
+      const docId = documentId || `doc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      if (!documentId) setDocumentId(docId);
+      
+      // Prepare file for upload
       const buffer = await file.arrayBuffer();
-      if (!documentId) throw new Error('Missing documentId for salt');
-      const { ciphertext, iv } = await encryptFileBufferHKDF(buffer, senderAddress.toLowerCase(), recipientAddress.toLowerCase(), documentId);
+      const { ciphertext, iv } = await encryptFileBufferHKDF(
+        buffer, 
+        senderAddress.toLowerCase(), 
+        recipientAddress.toLowerCase(), 
+        docId
+      );
+      
       const hashBuffer = await crypto.subtle.digest('SHA-256', Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0)));
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const sha256 = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      metadata = {
+      
+      const metadata = {
         name: file.name,
         type: file.type,
         size: file.size,
@@ -267,41 +360,38 @@ const Send = () => {
         description: message || undefined,
         iv,
         sha256,
-        chargeId: chargeId || undefined,
-        documentId,
+        documentId: docId,
+        isFreeTier: true
       };
-      if (typeof ciphertext === 'string') {
-        try {
-          cipherArr = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
-        } catch (e) {
-          throw new Error('Failed to convert ciphertext to Uint8Array');
-        }
-      } else {
-        throw new Error('Invalid ciphertext type');
-      }
-    } catch (err) {
-      setUploadError(err.message || 'Upload failed');
-      setUploading(false);
-      toast.error('Upload failed: ' + (err.message || 'Unknown error'));
-      return;
-    }
-    const toastId = toast.loading('Uploading file to Arweave and waiting for confirmation...');
-    try {
+      
+      const cipherArr = Uint8Array.from(atob(ciphertext), c => c.charCodeAt(0));
+      
+      // Upload to Arweave
       const arweaveTxId = await arweaveService.uploadFileToArweave(
         cipherArr,
         metadata,
         (pct) => setUploadProgress(Math.round(pct))
       );
+      
+      // Update state
       setArweaveTxId(arweaveTxId);
       setUploadComplete(true);
-      toast.success('File sent and stored on Arweave!', { id: toastId });
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('tuma:newSentFile', { detail: {
-          id: arweaveTxId,
-          metadata
-        }}));
-      }
+      
+      // Clear form
       setFile(null);
+      setRecipient('');
+      setRecipientAddress('');
+      setMessage('');
+      
+      // Show success message
+      toast.success('File sent and stored on Arweave!');
+      
+      // Notify parent component
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('tuma:newSentFile', { 
+          detail: { id: arweaveTxId, metadata } 
+        }));
+      }
       setRecipient("");
       setRecipientAddress("");
       setMessage("");
