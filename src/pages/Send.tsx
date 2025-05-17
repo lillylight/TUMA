@@ -174,7 +174,8 @@ const Send = () => {
             setPaymentStatus('pending');
             setPaymentError(null);
             setShowPaymentDialog(false);
-            setTimeout(() => handlePostPaymentUpload(), 500); // slight delay for UI
+            // Start upload immediately when status is PENDING
+            handlePostPaymentUpload();
           } else if (data.statusName && ['CONFIRMED', 'COMPLETED', 'confirmed', 'completed', 'RESOLVED', 'resolved', 'PAID', 'paid', 'SUCCESS', 'success'].includes(data.statusName)) {
             setPaymentStatus('success');
             setPaymentError(null);
