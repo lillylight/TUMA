@@ -130,13 +130,7 @@ const Send = () => {
     }
   }, [file]);
 
-  useEffect(() => {
-    if (!file) return;
-    const sizeMB = file.size / 1024 / 1024;
-    if (sizeMB < 10) {
-      setServiceFee('0.50');
-    }
-  }, [file]);
+
 
   // Effect: When chargeId changes and paymentStatus is 'pending', wait 30s before starting upload
 
