@@ -27,16 +27,10 @@ const Landing = () => {
   ];
 
   const pricingTiers = [
-<<<<<<< HEAD
-    { size: "Up to 10MB", price: "0.05 USDC" },
-    { size: "10MB to 50MB", price: "1.00 USDC" },
-    { size: "50MB to 100MB", price: "2.00 USDC" },
-=======
     { size: "Up to 100KB", price: "0.05 USDC" },
     { size: "100KB to 20MB", price: "1.00 USDC" },
     { size: "20MB to 50MB", price: "2.00 USDC" },
     { size: "50MB to 100MB", price: "3.00 USDC" },
->>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
     { size: ">100MB", price: "5.00 USDC" }
   ];
 
