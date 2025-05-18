@@ -8,12 +8,21 @@ export default async function handler(req, res) {
     const { ciphertext, iv, metadata } = req.body;
     const dataBuffer = Buffer.from(ciphertext, 'base64');
 
+<<<<<<< HEAD
     // Load JWK from Vite environment variable
     const jwkEnv = process.env.ARWEAVE_JWK_JSON || import.meta.env.VITE_ARWEAVE_JWK_JSON;
     if (!jwkEnv) {
       return res.status(500).json({ error: 'Missing ARWEAVE_JWK_JSON in environment' });
     }
     const jwk = typeof jwkEnv === 'string' ? JSON.parse(jwkEnv) : jwkEnv;
+=======
+    // Load JWK from environment variable (Vercel compatible)
+    const jwkEnv = process.env.ARWEAVE_JWK_JSON;
+    if (!jwkEnv) {
+      return res.status(500).json({ error: 'Missing ARWEAVE_JWK_JSON in environment' });
+    }
+    const jwk = JSON.parse(jwkEnv);
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
 
     // Initialize Arweave
     const arweave = Arweave.init({

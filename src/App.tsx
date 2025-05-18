@@ -48,10 +48,18 @@ const AppContent = () => {
               <Routes>
                 <Route path="/" element={<Navigate to="/landing" replace />} />
                 <Route path="/landing" element={<Landing />} />
+<<<<<<< HEAD
                 <Route path="/about" element={<About />} />
                 <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
                 <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
                 <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+=======
+                <Route path="/send" element={<ProtectedRoute element={<Send />} />} />
+                <Route path="/documents" element={<ProtectedRoute element={<Documents />} />} />
+                <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+                <Route path="/about" element={<About />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppRouteGuard>

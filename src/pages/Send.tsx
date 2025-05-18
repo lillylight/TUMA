@@ -131,6 +131,10 @@ const Send = () => {
   }, [file]);
 
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
   // Effect: When chargeId changes and paymentStatus is 'pending', wait 30s before starting upload
 
   // Auto-close payment dialog after 10 seconds if not closed by user
@@ -199,7 +203,11 @@ const Send = () => {
       setPaymentStatus('processing');
       setPaymentError(null);
       // Call backend to create charge with correct amount
+<<<<<<< HEAD
       const response = await fetch('/api/createCharge', {
+=======
+      const response = await fetch('http://localhost:4000/api/createCharge', {
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -575,7 +583,11 @@ const Send = () => {
                     <p className="text-doc-medium-gray">Loading recent recipients...</p>
                   </div>
                 ) : recentRecipients.length > 0 ? (
+<<<<<<< HEAD
                   recentRecipients.slice(0, 4).map((recipient) => (
+=======
+                  recentRecipients.map((recipient) => (
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
                     <button
                       key={recipient.address}
                       onClick={() => {
@@ -628,6 +640,7 @@ const Send = () => {
               <h3 className="font-medium mb-4">Pricing Tiers</h3>
               <ul className="space-y-3 text-sm">
                 <li className="flex justify-between">
+<<<<<<< HEAD
                   <span className="text-doc-medium-gray">Tier 1 (&lt;10MB):</span>
                   <span className="font-medium">0.05 USDC</span>
                 </li>
@@ -641,6 +654,25 @@ const Send = () => {
                 </li>
                 <li className="flex justify-between">
                   <span className="text-doc-medium-gray">Tier 4 (&gt;100MB):</span>
+=======
+                  <span className="text-doc-medium-gray">Tier 1 (&lt;100KB):</span>
+                  <span className="font-medium">0.05 USDC</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">Tier 2 (100KB-20MB):</span>
+                  <span className="font-medium">1.00 USDC</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">Tier 3 (20-50MB):</span>
+                  <span className="font-medium">2.00 USDC</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">Tier 4 (50-100MB):</span>
+                  <span className="font-medium">3.00 USDC</span>
+                </li>
+                <li className="flex justify-between">
+                  <span className="text-doc-medium-gray">Tier 5 (&gt;100MB):</span>
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
                   <span className="font-medium">5.00 USDC</span>
                 </li>
               </ul>
@@ -732,7 +764,11 @@ const Send = () => {
               {showPaymentDialog && (
                 <Checkout
                   chargeHandler={chargeHandler}
+<<<<<<< HEAD
                   onStatus={(status) => {
+=======
+                  onStatus={async (status) => {
+>>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
                     const { statusName } = status;
                     if (statusName === 'success') {
                       setPaymentStatus('success');
