@@ -12,6 +12,9 @@
     "start": "vite preview --port 3000",
     "vercel-build": "vite build"
   },
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "dependencies": {
     "@coinbase/onchainkit": "latest",
     "@coinbase/wallet-sdk": "^4.3.2",

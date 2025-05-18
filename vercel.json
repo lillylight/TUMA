@@ -9,14 +9,30 @@
       }
     },
     {
-      "src": "api/**/*.js",
+      "src": "api/createCharge.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/chargeStatus.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/upload.js",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "src": "/api/createCharge",
+      "dest": "/api/createCharge"
+    },
+    {
+      "src": "/api/chargeStatus",
+      "dest": "/api/chargeStatus"
+    },
+    {
+      "src": "/api/upload",
+      "dest": "/api/upload"
     },
     {
       "src": "^/assets/(.*)",
@@ -38,5 +54,8 @@
       "src": "^/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_VERSION": "18.x"
+  }
 }
