@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # TUMA - Trusted Universal Media Access
 
 ## 🌟 Introduction
@@ -230,16 +229,6 @@ Join our community to stay updated and get support:
 At BaseZambia, we believe in a future where data privacy and security are fundamental rights. TUMA is our contribution to a more secure and decentralized web, where users have full control over their digital assets and communications.
 
 Join us in building the future of secure file sharing!
-=======
-# Welcome to your Lovable project
-
-## Project info
-
-**URL**: https://lovable.dev/projects/8cb3debd-527b-481c-a25c-e91386c5b662
-
-## 📄 Project Overview
-
-A secure, blockchain-powered document exchange platform with:
 - **Onchain payments** (USDC via Coinbase/OnchainKit)
 - **Permanent storage** (Arweave)
 - **End-to-end encryption**
@@ -331,13 +320,12 @@ Open an issue or contact the maintainer!
 Simply open [Lovable](https://lovable.dev/projects/8cb3debd-527b-481c-a25c-e91386c5b662) and click on Share -> Publish.
 
 ## I want to use a custom domain - is that possible?
->>>>>>> 97caf59870c63b920bb0d4c1f1aa9cb4dd22b0fd
 
 We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
 
 ## What technologies are used for this project?
 
-This project is built with .
+This project is built with:
 
 - Vite
 - TypeScript
